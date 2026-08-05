@@ -229,7 +229,6 @@
     white-space:nowrap;
   }
   .brand-chip .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:0.75;}
-  .card-code{margin-left:auto;font-size:12px;font-weight:700;color:var(--ink);}
 
   .ref-list{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px;}
   .ref-pill{
@@ -238,7 +237,19 @@
   }
   .ref-pill.more{color:var(--ink-faint);background:transparent;border-style:dashed;}
 
-  .swap-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;min-width:0;}
+  .card-title{
+    font-size:13px;font-weight:700;color:var(--ink);letter-spacing:-0.005em;
+    margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .card-substitute-row{
+    display:flex;align-items:center;gap:5px;margin-bottom:8px;min-width:0;
+    font-size:11.5px;font-weight:600;color:var(--success);
+  }
+  .card-substitute-row .swap-arrow{flex:none;display:flex;color:var(--ink-faint);}
+  .card-substitute-row .swap-arrow svg{width:11px;height:11px;display:block;}
+  .card-substitute-row .text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;}
+
+  .swap-row{display:flex;align-items:center;gap:6px;min-width:0;}
   .swap-chip{
     font-size:11px;font-weight:600;color:var(--ink);
     background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2.5px 7px;
@@ -486,39 +497,34 @@
       return m;
     }
     var seeds = [
-      {
-        materialCode:"AV-2201", brand:"Momi Mini", references:["555","556"],
+      { brand:"Momi Mini", references:["555","556"],
         originalFabric:"Linha de costura 40/2 poliéster branca",
         substituteFabric:"Linha de costura 40/2 poliéster off-white",
         details:"Fornecedor habitual sem estoque para o lote atual.",
         column:"compras", createdDaysAgo:0, enteredDaysAgo:0
       },
-      {
-        materialCode:"AV-0567", brand:"Bimbi Menino", references:["3310","3311","3312"],
+      { brand:"Bimbi Menino", references:["3310","3311","3312"],
         originalFabric:"Elástico 12mm azul marinho",
         substituteFabric:"Elástico 12mm azul petróleo",
         details:"Cor descontinuada pelo fornecedor, necessário localizar equivalente.",
         column:"demanda_inicial", createdDaysAgo:4, enteredDaysAgo:4,
         actionsInitial:{ "3310":{action:"Trocar alternativa",done:false}, "3311":{action:"Criar alternativa",done:false}, "3312":{action:null,done:false} }
       },
-      {
-        materialCode:"TC-1190-OF", brand:"Youccie", references:["2200"],
+      { brand:"Youccie", references:["2200"],
         originalFabric:"Malha canelada 220g/m² caramelo",
         substituteFabric:"Malha canelada 240g/m² caramelo",
         details:"Ajuste de gramatura solicitado pelo controle de qualidade.",
         column:"demanda_inicial", createdDaysAgo:2, enteredDaysAgo:1,
         actionsInitial:{ "2200":{action:"Trocar alternativa",done:false} }
       },
-      {
-        materialCode:"AV-0912", brand:"Authoria", references:["4410","4411"],
+      { brand:"Authoria", references:["4410","4411"],
         originalFabric:"Zíper metálico 18cm comum",
         substituteFabric:"Zíper metálico 18cm com trava de segurança infantil",
         details:"Substituição solicitada pelo setor de segurança do produto.",
         column:"engenharia", createdDaysAgo:6, enteredDaysAgo:3,
         actionsInitial:{ "4410":{action:"Trocar alternativa",done:true}, "4411":{action:"Criar alternativa",done:false} }
       },
-      {
-        materialCode:"TC-2278-AZ", brand:"petite", references:["1500","1501","1502"],
+      { brand:"petite", references:["1500","1501","1502"],
         originalFabric:"Tricoline estampa poá azul",
         substituteFabric:"Tricoline estampa floral azul",
         details:"Nova referência de estampa aprovada pelo estilo.",
@@ -526,8 +532,7 @@
         actionsInitial:{ "1500":{action:"Trocar alternativa",done:true}, "1501":{action:"Trocar alternativa",done:true}, "1502":{action:"Criar alternativa",done:true} },
         actionsFinal:{ "1500":{action:"Atualizar OP",finalized:true}, "1501":{action:"Dividir OP",finalized:false}, "1502":{action:null,finalized:false} }
       },
-      {
-        materialCode:"TC-0044-VD", brand:"Anime Bebe", references:["900"],
+      { brand:"Anime Bebe", references:["900"],
         originalFabric:"Moletom flanelado verde musgo",
         substituteFabric:"Moletom flanelado verde sálvia",
         details:"Troca concluída e homologada.",
@@ -535,8 +540,7 @@
         actionsInitial:{ "900":{action:"Trocar alternativa",done:true} },
         actionsFinal:{ "900":{action:"Atualizar OP",finalized:true} }
       },
-      {
-        materialCode:"TC-3382-VM", brand:"Momi", references:["1201","1202"],
+      { brand:"Momi", references:["1201","1202"],
         originalFabric:"Malha viscose 180g/m² vermelha",
         substituteFabric:"Malha viscose 180g/m² bordô",
         details:"Lote descontinuado, necessário equivalente com mesma gramatura.",
@@ -553,7 +557,6 @@
       });
       return {
         id: uid(),
-        materialCode: s.materialCode,
         originalFabric: s.originalFabric || "",
         substituteFabric: s.substituteFabric || "",
         brand: s.brand,
@@ -678,19 +681,17 @@
 
     return (
       '<div class="card" draggable="true" data-id="' + card.id + '" tabindex="0" role="button" ' +
-        'aria-label="' + esc(card.materialCode) + ', ' + esc(brand.name) + '" style="--brand-color:' + brand.bg + '">' +
+        'aria-label="' + esc(card.originalFabric) + ', ' + esc(brand.name) + '" style="--brand-color:' + brand.bg + '">' +
         '<div class="card-row-top">' +
           '<span class="brand-chip" style="--brand-bg:' + brand.bg + ';--brand-fg:' + brand.fg + ';background:var(--brand-bg);color:var(--brand-fg);">' +
             '<span class="dot"></span>' + esc(brand.name) +
           '</span>' +
-          '<span class="card-code mono">' + esc(card.materialCode) + '</span>' +
         '</div>' +
-        ((card.originalFabric || card.substituteFabric) ?
-          '<div class="swap-row">' +
-            '<span class="swap-chip" title="Tecido original">' + esc(card.originalFabric || "—") + '</span>' +
-            '<span class="swap-arrow">' + ICON_ARROW + '</span>' +
-            '<span class="swap-chip substitute" title="Tecido substituto">' + esc(card.substituteFabric || "a definir") + '</span>' +
-          '</div>' : '') +
+        '<div class="card-title" title="' + esc(card.originalFabric) + '">' + esc(card.originalFabric) + '</div>' +
+        '<div class="card-substitute-row" title="' + esc(card.substituteFabric) + '">' +
+          '<span class="swap-arrow">' + ICON_ARROW + '</span>' +
+          '<span class="text">' + esc(card.substituteFabric || "substituto a definir") + '</span>' +
+        '</div>' +
         '<div class="ref-list">' +
           visibleRefs.map(function(r){ return '<span class="ref-pill mono">' + esc(r) + '</span>'; }).join("") +
           (extra > 0 ? '<span class="ref-pill more">+' + extra + '</span>' : '') +
@@ -800,15 +801,11 @@
       '<div class="panel-body">' +
         '<form id="createForm">' +
           '<div class="field">' +
-            '<label for="fCode">Código do Material (Tecido ou Aviamento)</label>' +
-            '<input type="text" id="fCode" placeholder="Ex: TC-3382-VM" required>' +
-          '</div>' +
-          '<div class="field">' +
-            '<label for="fOriginal">Tecido Original</label>' +
+            '<label for="fOriginal">Tecido/Aviamento Atual</label>' +
             '<input type="text" id="fOriginal" placeholder="Ex: Malha viscose 180g/m² vermelha" required>' +
           '</div>' +
           '<div class="field">' +
-            '<label for="fSubstitute">Tecido Substituto</label>' +
+            '<label for="fSubstitute">Tecido/Aviamento Substituto</label>' +
             '<input type="text" id="fSubstitute" placeholder="Ex: Malha viscose 180g/m² bordô" required>' +
             '<div class="hint">Se ainda não houver um substituto definido, descreva a alternativa proposta.</div>' +
           '</div>' +
@@ -835,7 +832,6 @@
     document.getElementById("btnClosePanel").addEventListener("click", closePanel);
     document.getElementById("createForm").addEventListener("submit", function(e){
       e.preventDefault();
-      var code = document.getElementById("fCode").value.trim();
       var originalFabric = document.getElementById("fOriginal").value.trim();
       var substituteFabric = document.getElementById("fSubstitute").value.trim();
       var refsRaw = document.getElementById("fRefs").value.trim();
@@ -845,8 +841,8 @@
       var refs = refsRaw.split(",").map(function(r){ return r.trim(); }).filter(Boolean);
       var uniqueRefs = refs.filter(function(r,i){ return refs.indexOf(r) === i; });
 
-      if (!code || !originalFabric || !substituteFabric || !uniqueRefs.length || !brand){
-        toast("Preencha código do material, tecido original, tecido substituto, ao menos uma referência e a marca.", "error");
+      if (!originalFabric || !substituteFabric || !uniqueRefs.length || !brand){
+        toast("Preencha tecido/aviamento atual, substituto, ao menos uma referência e a marca.", "error");
         return;
       }
 
@@ -859,7 +855,6 @@
       var now = Date.now();
       state.cards.push({
         id: uid(),
-        materialCode: code,
         originalFabric: originalFabric,
         substituteFabric: substituteFabric,
         brand: brand,
@@ -874,7 +869,7 @@
       save();
       renderAll();
       closePanel();
-      toast("Solicitação " + code + " criada em Compras.", "success");
+      toast("Solicitação de " + originalFabric + " criada em Compras.", "success");
     });
 
     openOverlayPanel();
@@ -906,7 +901,7 @@
     panelEl.innerHTML =
       '<div class="panel-head">' +
         '<div class="titles">' +
-          '<div class="code mono" id="panel-title">' + esc(card.materialCode) + '</div>' +
+          '<div class="code" id="panel-title">' + esc(card.originalFabric) + '</div>' +
           '<div class="meta">Criado em ' + fmtDate(card.createdAt) + ' · ' + totalDays + ' dias no total · ' + colDays + ' dias em ' + esc(colLabel(card.column)) + '</div>' +
         '</div>' +
         '<button class="icon-btn" id="btnClosePanel" aria-label="Fechar">' + ICON_CLOSE + '</button>' +
@@ -918,15 +913,14 @@
           '<div class="field" style="margin-bottom:8px;">' +
             '<span class="brand-chip" style="--brand-bg:' + brand.bg + ';--brand-fg:' + brand.fg + ';background:var(--brand-bg);color:var(--brand-fg);"><span class="dot"></span>' + esc(brand.name) + '</span>' +
           '</div>' +
-          ((card.originalFabric || card.substituteFabric) ?
-            '<div class="field">' +
-              '<label>Tecido original → substituto</label>' +
-              '<div class="swap-row">' +
-                '<span class="swap-chip" title="Tecido original">' + esc(card.originalFabric || "—") + '</span>' +
-                '<span class="swap-arrow">' + ICON_ARROW + '</span>' +
-                '<span class="swap-chip substitute" title="Tecido substituto">' + esc(card.substituteFabric || "a definir") + '</span>' +
-              '</div>' +
-            '</div>' : '') +
+          '<div class="field">' +
+            '<label>Tecido/Aviamento atual → substituto</label>' +
+            '<div class="swap-row">' +
+              '<span class="swap-chip" title="Tecido/Aviamento atual">' + esc(card.originalFabric || "—") + '</span>' +
+              '<span class="swap-arrow">' + ICON_ARROW + '</span>' +
+              '<span class="swap-chip substitute" title="Tecido/Aviamento substituto">' + esc(card.substituteFabric || "a definir") + '</span>' +
+            '</div>' +
+          '</div>' +
           '<div class="field">' +
             '<label>Referências afetadas</label>' +
             '<div class="ref-list">' + card.references.map(function(r){ return '<span class="ref-pill mono">' + esc(r) + '</span>'; }).join("") + '</div>' +
@@ -1049,7 +1043,7 @@
     });
     var delBtn = document.getElementById("btnDeleteCard");
     if (delBtn) delBtn.addEventListener("click", function(){
-      if (confirm("Excluir a solicitação " + card.materialCode + "? Esta ação não pode ser desfeita.")){
+      if (confirm("Excluir a solicitação de " + card.originalFabric + "? Esta ação não pode ser desfeita.")){
         state.cards = state.cards.filter(function(c){ return c.id !== card.id; });
         save();
         renderAll();
