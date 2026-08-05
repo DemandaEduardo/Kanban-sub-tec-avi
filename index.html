@@ -1,0 +1,1012 @@
+<title>Fluxo Têxtil — Substituição de Tecidos e Aviamentos</title>
+<style>
+  :root{
+    --bg:#E6E4DC;
+    --surface:#FBFAF7;
+    --surface-raised:#FFFFFF;
+    --ink:#20242A;
+    --ink-soft:#5C6169;
+    --ink-faint:#8A8E93;
+    --line:#D6D2C6;
+    --line-soft:#DEDBD0;
+    --accent:#2C4A70;
+    --accent-strong:#1F3654;
+    --accent-soft:rgba(44,74,112,0.12);
+    --accent-ink:#FFFFFF;
+    --success:#3F7A5C;
+    --success-soft:rgba(63,122,92,0.14);
+    --danger:#B23B3B;
+    --danger-soft:rgba(178,59,59,0.14);
+    --shadow-card:0 1px 2px rgba(32,36,42,0.06), 0 1px 1px rgba(32,36,42,0.04);
+    --shadow-card-hover:0 6px 16px rgba(32,36,42,0.12), 0 2px 4px rgba(32,36,42,0.06);
+    --shadow-panel:-8px 0 32px rgba(20,22,26,0.18);
+    --col-compras:#E6E4DC;
+    --col-demanda-inicial:#EFE6D3;
+    --col-engenharia:#E3E3ED;
+    --col-demanda-final:#DEE9E6;
+    --col-concluido:#DEEBDF;
+    --col-compras-accent:#8A8574;
+    --col-demanda-inicial-accent:#B8955A;
+    --col-engenharia-accent:#6B5C99;
+    --col-demanda-final-accent:#3F8C7A;
+    --col-concluido-accent:#3F7A5C;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171A;
+      --surface:#1D2126;
+      --surface-raised:#242830;
+      --ink:#E8E6DF;
+      --ink-soft:#9BA1A6;
+      --ink-faint:#6E7378;
+      --line:#33383D;
+      --line-soft:#2A2F34;
+      --accent:#8FADD1;
+      --accent-strong:#AEC4E2;
+      --accent-soft:rgba(143,173,209,0.16);
+      --accent-ink:#151A20;
+      --success:#6FBF97;
+      --success-soft:rgba(111,191,151,0.16);
+      --danger:#E68383;
+      --danger-soft:rgba(230,131,131,0.18);
+      --shadow-card:0 1px 2px rgba(0,0,0,0.3);
+      --shadow-card-hover:0 8px 20px rgba(0,0,0,0.4);
+      --shadow-panel:-8px 0 32px rgba(0,0,0,0.5);
+      --col-compras:#1B1E22;
+      --col-demanda-inicial:#221E17;
+      --col-engenharia:#1C1C26;
+      --col-demanda-final:#16201D;
+      --col-concluido:#171F19;
+      --col-compras-accent:#7C8790;
+      --col-demanda-inicial-accent:#C9A05F;
+      --col-engenharia-accent:#8B7EC0;
+      --col-demanda-final-accent:#5CB39D;
+      --col-concluido-accent:#6FBF97;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#14171A; --surface:#1D2126; --surface-raised:#242830; --ink:#E8E6DF; --ink-soft:#9BA1A6; --ink-faint:#6E7378;
+    --line:#33383D; --line-soft:#2A2F34; --accent:#8FADD1; --accent-strong:#AEC4E2; --accent-soft:rgba(143,173,209,0.16);
+    --accent-ink:#151A20; --success:#6FBF97; --success-soft:rgba(111,191,151,0.16); --danger:#E68383; --danger-soft:rgba(230,131,131,0.18);
+    --shadow-card:0 1px 2px rgba(0,0,0,0.3); --shadow-card-hover:0 8px 20px rgba(0,0,0,0.4); --shadow-panel:-8px 0 32px rgba(0,0,0,0.5);
+    --col-compras:#1B1E22; --col-demanda-inicial:#221E17; --col-engenharia:#1C1C26; --col-demanda-final:#16201D; --col-concluido:#171F19;
+    --col-compras-accent:#7C8790; --col-demanda-inicial-accent:#C9A05F; --col-engenharia-accent:#8B7EC0; --col-demanda-final-accent:#5CB39D; --col-concluido-accent:#6FBF97;
+    color-scheme: dark;
+  }
+  :root[data-theme="light"]{
+    --bg:#E6E4DC; --surface:#FBFAF7; --surface-raised:#FFFFFF; --ink:#20242A; --ink-soft:#5C6169; --ink-faint:#8A8E93;
+    --line:#D6D2C6; --line-soft:#DEDBD0; --accent:#2C4A70; --accent-strong:#1F3654; --accent-soft:rgba(44,74,112,0.12);
+    --accent-ink:#FFFFFF; --success:#3F7A5C; --success-soft:rgba(63,122,92,0.14); --danger:#B23B3B; --danger-soft:rgba(178,59,59,0.14);
+    --shadow-card:0 1px 2px rgba(32,36,42,0.06), 0 1px 1px rgba(32,36,42,0.04); --shadow-card-hover:0 6px 16px rgba(32,36,42,0.12), 0 2px 4px rgba(32,36,42,0.06);
+    --shadow-panel:-8px 0 32px rgba(20,22,26,0.18);
+    --col-compras:#E6E4DC; --col-demanda-inicial:#EFE6D3; --col-engenharia:#E3E3ED; --col-demanda-final:#DEE9E6; --col-concluido:#DEEBDF;
+    --col-compras-accent:#8A8574; --col-demanda-inicial-accent:#B8955A; --col-engenharia-accent:#6B5C99; --col-demanda-final-accent:#3F8C7A; --col-concluido-accent:#3F7A5C;
+    color-scheme: light;
+  }
+
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:14px;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .mono{
+    font-family:ui-monospace,SFMono-Regular,"SF Mono",Consolas,"Liberation Mono",Menlo,monospace;
+    font-variant-numeric:tabular-nums;
+  }
+  button{font-family:inherit;}
+  ::selection{background:var(--accent-soft);}
+
+  /* ---------- App shell ---------- */
+  .app{display:flex;flex-direction:column;min-height:100vh;}
+
+  .topbar{
+    display:flex;align-items:center;gap:16px;
+    padding:20px 28px 16px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg, var(--surface) 0%, var(--bg) 100%);
+  }
+  .brand-mark{
+    width:34px;height:34px;border-radius:8px;flex:none;
+    background:
+      repeating-linear-gradient(45deg, var(--accent-soft) 0 3px, transparent 3px 6px),
+      var(--surface-raised);
+    border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .brand-mark svg{width:18px;height:18px;color:var(--accent);}
+  .topbar h1{
+    font-size:17px;font-weight:700;margin:0;letter-spacing:-0.01em;
+  }
+  .topbar .subtitle{
+    font-size:12.5px;color:var(--ink-soft);margin-top:2px;
+  }
+  .topbar-spacer{flex:1;}
+  .theme-note{font-size:11.5px;color:var(--ink-faint);}
+
+  /* ---------- Stats strip ---------- */
+  .stats{
+    display:flex;gap:10px;padding:14px 28px;overflow-x:auto;
+    border-bottom:1px solid var(--line);
+  }
+  .stat-tile{
+    flex:1 1 0;min-width:150px;
+    background:var(--surface);border:1px solid var(--line);border-radius:10px;
+    padding:10px 14px;display:flex;flex-direction:column;gap:2px;
+  }
+  .stat-tile .label{
+    font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink-faint);
+  }
+  .stat-tile .row{display:flex;align-items:baseline;gap:8px;}
+  .stat-tile .count{font-size:22px;font-weight:700;letter-spacing:-0.02em;}
+  .stat-tile .late{
+    font-size:11px;font-weight:600;color:var(--danger);
+    display:flex;align-items:center;gap:4px;
+  }
+  .stat-tile .late::before{
+    content:"";width:6px;height:6px;border-radius:50%;background:var(--danger);
+  }
+
+  /* ---------- Board ---------- */
+  .board-wrap{flex:1;overflow-x:auto;overflow-y:hidden;padding:20px 28px 28px;}
+  .board{display:flex;gap:16px;height:100%;min-height:0;width:max-content;}
+  .column{
+    width:308px;flex:none;display:flex;flex-direction:column;
+    background:var(--col-bg);
+    border:1px solid var(--line-soft);
+    border-radius:14px;
+    max-height:calc(100vh - 210px);
+  }
+  .column-head{
+    padding:12px 14px 10px;border-bottom:1px solid var(--line-soft);
+    display:flex;align-items:center;gap:8px;position:relative;
+  }
+  .column-head::before{
+    content:"";position:absolute;left:14px;right:14px;top:0;height:3px;border-radius:0 0 3px 3px;
+    background:var(--col-accent);
+  }
+  .column-title{
+    font-size:11.5px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink);
+    margin-top:2px;
+  }
+  .column-count{
+    font-size:11px;font-weight:700;color:var(--ink-soft);
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:999px;padding:1px 8px;margin-left:auto;margin-top:2px;
+  }
+  .new-request-btn{
+    display:flex;align-items:center;gap:6px;
+    background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;
+    padding:8px 12px;margin:10px 12px 4px;font-size:12.5px;font-weight:600;cursor:pointer;
+    transition:transform .12s ease, filter .12s ease;
+  }
+  .new-request-btn:hover{filter:brightness(1.08);}
+  .new-request-btn:active{transform:scale(0.97);}
+  .new-request-btn svg{width:14px;height:14px;}
+
+  .card-list{
+    flex:1;overflow-y:auto;padding:10px 12px 14px;display:flex;flex-direction:column;gap:10px;min-height:60px;
+  }
+  .card-list.drag-over{background:var(--accent-soft);border-radius:10px;}
+
+  .empty-hint{
+    font-size:12px;color:var(--ink-faint);text-align:center;padding:18px 8px;border:1px dashed var(--line);border-radius:10px;
+  }
+
+  /* ---------- Card ---------- */
+  .card{
+    background:var(--surface-raised);
+    border:1px solid var(--line-soft);
+    border-left:3px solid var(--brand-color, var(--accent));
+    border-radius:10px;
+    padding:11px 12px 10px;
+    box-shadow:var(--shadow-card);
+    cursor:grab;
+    animation:card-in .18s ease;
+  }
+  @keyframes card-in{from{opacity:0;transform:translateY(3px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion: reduce){
+    .card{animation:none;}
+  }
+  .card:hover{box-shadow:var(--shadow-card-hover);}
+  .card.dragging{opacity:0.4;}
+  .card:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .card-row-top{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
+  .brand-chip{
+    display:inline-flex;align-items:center;gap:5px;
+    font-size:10.5px;font-weight:700;letter-spacing:0.02em;
+    padding:3px 8px;border-radius:999px;
+    background:var(--brand-bg);color:var(--brand-fg);
+    white-space:nowrap;
+  }
+  .brand-chip .dot{width:6px;height:6px;border-radius:50%;background:currentColor;opacity:0.75;}
+  .card-code{margin-left:auto;font-size:12px;font-weight:700;color:var(--ink);}
+
+  .ref-list{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px;}
+  .ref-pill{
+    font-size:10.5px;font-weight:600;color:var(--ink-soft);
+    background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:1.5px 6px;
+  }
+  .ref-pill.more{color:var(--ink-faint);background:transparent;border-style:dashed;}
+
+  .card-details{
+    font-size:12px;color:var(--ink-soft);margin-bottom:9px;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+
+  .card-footer{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .time-badge{
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:10.5px;font-weight:600;
+    padding:3px 7px;border-radius:6px;
+    background:var(--bg);color:var(--ink-soft);
+  }
+  .time-badge svg{width:10px;height:10px;}
+  .time-badge.late{background:var(--danger-soft);color:var(--danger);}
+
+  .stage-dots{display:flex;gap:3px;margin-left:auto;}
+  .stage-dots span{width:5px;height:5px;border-radius:50%;background:var(--line);}
+  .stage-dots span.active{background:var(--col-accent);}
+  .stage-dots span.past{background:var(--ink-faint);}
+
+  /* ---------- Overlay + Panel ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(10,12,14,0.42);
+    opacity:0;pointer-events:none;transition:opacity .18s ease;z-index:40;
+  }
+  .overlay.open{opacity:1;pointer-events:auto;}
+
+  .panel{
+    position:fixed;top:0;right:0;bottom:0;width:min(440px,100vw);
+    background:var(--surface);border-left:1px solid var(--line);
+    box-shadow:var(--shadow-panel);
+    transform:translateX(100%);transition:transform .22s ease;
+    display:flex;flex-direction:column;z-index:41;
+  }
+  .panel.open{transform:translateX(0);}
+  @media (prefers-reduced-motion: reduce){
+    .overlay,.panel{transition:none;}
+  }
+
+  .panel-head{
+    padding:18px 20px 14px;border-bottom:1px solid var(--line);
+    display:flex;gap:12px;align-items:flex-start;
+  }
+  .panel-head .titles{flex:1;min-width:0;}
+  .panel-head .code{font-size:17px;font-weight:700;letter-spacing:-0.01em;word-break:break-word;}
+  .panel-head .meta{font-size:11.5px;color:var(--ink-faint);margin-top:3px;}
+  .icon-btn{
+    background:none;border:1px solid var(--line);border-radius:8px;width:30px;height:30px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-soft);flex:none;
+  }
+  .icon-btn:hover{background:var(--bg);color:var(--ink);}
+  .icon-btn svg{width:15px;height:15px;}
+
+  .panel-body{flex:1;overflow-y:auto;padding:6px 20px 24px;}
+  .panel-section{padding:16px 0;border-bottom:1px solid var(--line-soft);}
+  .panel-section:last-child{border-bottom:none;}
+  .section-label{
+    font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--ink-faint);
+    margin-bottom:10px;display:flex;align-items:center;gap:8px;
+  }
+  .section-label .badge{
+    font-size:10px;font-weight:700;padding:1px 7px;border-radius:999px;letter-spacing:0;text-transform:none;
+    background:var(--bg);color:var(--ink-soft);
+  }
+  .section-label .badge.ok{background:var(--success-soft);color:var(--success);}
+  .section-label .badge.pending{background:var(--danger-soft);color:var(--danger);}
+
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
+  .field input[type="text"], .field select, .field textarea{
+    width:100%;font-family:inherit;font-size:13px;color:var(--ink);
+    background:var(--surface-raised);border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px;
+  }
+  .field textarea{resize:vertical;min-height:64px;}
+  .field input:focus, .field select:focus, .field textarea:focus{
+    outline:2px solid var(--accent);outline-offset:0;border-color:transparent;
+  }
+  .field .hint{font-size:11px;color:var(--ink-faint);margin-top:4px;}
+
+  .detail-text{font-size:12.5px;color:var(--ink-soft);white-space:pre-wrap;}
+
+  .ref-action-row{
+    display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--line-soft);
+  }
+  .ref-action-row:last-child{border-bottom:none;}
+  .ref-action-row .ref-tag{
+    font-size:11.5px;font-weight:700;color:var(--ink);background:var(--bg);
+    border-radius:6px;padding:3px 7px;flex:none;min-width:44px;text-align:center;
+  }
+  .ref-action-row select{
+    flex:1;font-size:12.5px;padding:6px 8px;border-radius:7px;border:1px solid var(--line);
+    background:var(--surface-raised);color:var(--ink);
+  }
+  .ref-action-row .readonly-action{
+    flex:1;font-size:12.5px;color:var(--ink-soft);
+  }
+  .check-label{
+    display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--ink-soft);
+    cursor:pointer;user-select:none;white-space:nowrap;
+  }
+  .check-label input{width:15px;height:15px;accent-color:var(--success);cursor:pointer;}
+  .check-label.disabled{opacity:0.45;cursor:not-allowed;}
+
+  .move-grid{display:flex;flex-wrap:wrap;gap:8px;}
+  .move-btn{
+    font-size:11.5px;font-weight:600;padding:7px 11px;border-radius:8px;cursor:pointer;
+    background:var(--surface-raised);border:1px solid var(--line);color:var(--ink);
+  }
+  .move-btn:hover{border-color:var(--accent);}
+  .move-btn.current{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);cursor:default;}
+  .move-btn.blocked{color:var(--ink-faint);}
+
+  .danger-link{
+    background:none;border:none;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;padding:6px 0;
+  }
+  .danger-link:hover{text-decoration:underline;}
+
+  /* ---------- Toasts ---------- */
+  .toast-stack{
+    position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:60;
+    max-width:min(360px,calc(100vw - 40px));
+  }
+  .toast{
+    background:var(--surface-raised);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:9px;padding:10px 14px;box-shadow:var(--shadow-card-hover);
+    font-size:12.5px;color:var(--ink);opacity:0;transform:translateY(6px);
+    transition:opacity .18s ease, transform .18s ease;
+  }
+  .toast.show{opacity:1;transform:none;}
+  .toast.error{border-left-color:var(--danger);}
+  .toast.success{border-left-color:var(--success);}
+  @media (prefers-reduced-motion: reduce){.toast{transition:opacity .18s ease;}}
+
+  @media (max-width:640px){
+    .topbar{padding:16px 16px 12px;}
+    .board-wrap{padding:14px 14px 20px;}
+    .stats{padding:12px 14px;}
+    .panel{width:100vw;}
+  }
+
+  .visually-hidden{
+    position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;
+  }
+</style>
+
+<div class="app">
+  <header class="topbar">
+    <div class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5c2.5 2.6 2.5 14.4 0 17M12 3.5c-2.5 2.6-2.5 14.4 0 17M4 9.5h16M4 14.5h16"/></svg>
+    </div>
+    <div>
+      <h1>Fluxo Têxtil</h1>
+      <div class="subtitle">Substituição de tecidos e aviamentos — Compras → Demanda → Engenharia → Conclusão</div>
+    </div>
+    <div class="topbar-spacer"></div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="board-wrap">
+    <div class="board" id="board"></div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<aside class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title"></aside>
+<div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = "texfluxo_kanban_v1";
+  var DAY_MS = 86400000;
+
+  var COLUMNS = [
+    { id:"compras", label:"Compras" },
+    { id:"demanda_inicial", label:"Demanda (Inicial)" },
+    { id:"engenharia", label:"Engenharia" },
+    { id:"demanda_final", label:"Demanda (Final)" },
+    { id:"concluido", label:"Concluído" }
+  ];
+
+  var BRANDS = [
+    { name:"Animê", bg:"#A8434B", fg:"#FFFFFF" },
+    { name:"petite", bg:"#45707E", fg:"#FFFFFF" },
+    { name:"Anime Bebe", bg:"#D99B5B", fg:"#241A0E" },
+    { name:"Authoria", bg:"#5C4E82", fg:"#FFFFFF" },
+    { name:"Momi", bg:"#3A7A5D", fg:"#FFFFFF" },
+    { name:"Momi Mini", bg:"#86AE84", fg:"#1B2A19" },
+    { name:"Momi Bebe", bg:"#C7D6BC", fg:"#2B3327" },
+    { name:"Youccie", bg:"#C17A54", fg:"#FFFFFF" },
+    { name:"Bimbi Menina", bg:"#C6698C", fg:"#FFFFFF" },
+    { name:"Bimbi Menino", bg:"#4E7FAA", fg:"#FFFFFF" }
+  ];
+
+  var INITIAL_ACTIONS = ["Trocar alternativa", "Criar alternativa"];
+  var FINAL_ACTIONS = ["Dividir OP", "Atualizar OP", "Gerar nova OP"];
+
+  function brandOf(name){
+    for (var i=0;i<BRANDS.length;i++){ if (BRANDS[i].name === name) return BRANDS[i]; }
+    return { name:name, bg:"#8A8574", fg:"#FFFFFF" };
+  }
+  function colLabel(id){
+    for (var i=0;i<COLUMNS.length;i++){ if (COLUMNS[i].id === id) return COLUMNS[i].label; }
+    return id;
+  }
+  function colIndex(id){
+    for (var i=0;i<COLUMNS.length;i++){ if (COLUMNS[i].id === id) return i; }
+    return -1;
+  }
+  function uid(){
+    return "c" + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+  }
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+      return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c];
+    });
+  }
+  function daysBetween(ts){ return Math.floor((Date.now() - ts) / DAY_MS); }
+  function fmtDate(ts){
+    var d = new Date(ts);
+    return String(d.getDate()).padStart(2,"0") + "/" + String(d.getMonth()+1).padStart(2,"0") + "/" + d.getFullYear();
+  }
+
+  /* ---------- State ---------- */
+  var state = { cards: [] };
+
+  function seedCards(){
+    var now = Date.now();
+    function daysAgo(n){ return now - n*DAY_MS; }
+    function mkActionMap(refs, options){
+      var m = {};
+      refs.forEach(function(r){ m[r] = { action:null, done:false }; if(options&&options.finalized!==undefined) m[r].finalized=false; });
+      return m;
+    }
+    var seeds = [
+      {
+        materialCode:"AV-2201", brand:"Momi Mini", references:["555","556"],
+        details:"Linha de costura 40/2 poliéster — fornecedor habitual sem estoque para o lote atual.",
+        column:"compras", createdDaysAgo:0, enteredDaysAgo:0
+      },
+      {
+        materialCode:"AV-0567", brand:"Bimbi Menino", references:["3310","3311","3312"],
+        details:"Elástico 12mm — cor descontinuada pelo fornecedor, necessário localizar equivalente.",
+        column:"demanda_inicial", createdDaysAgo:4, enteredDaysAgo:4,
+        actionsInitial:{ "3310":{action:"Trocar alternativa",done:false}, "3311":{action:"Criar alternativa",done:false}, "3312":{action:null,done:false} }
+      },
+      {
+        materialCode:"TC-1190-OF", brand:"Youccie", references:["2200"],
+        details:"Tecido malha canelada — ajuste de gramatura solicitado pelo controle de qualidade.",
+        column:"demanda_inicial", createdDaysAgo:2, enteredDaysAgo:1,
+        actionsInitial:{ "2200":{action:"Trocar alternativa",done:false} }
+      },
+      {
+        materialCode:"AV-0912", brand:"Authoria", references:["4410","4411"],
+        details:"Zíper metálico 18cm — substituição por versão com trava de segurança infantil.",
+        column:"engenharia", createdDaysAgo:6, enteredDaysAgo:3,
+        actionsInitial:{ "4410":{action:"Trocar alternativa",done:true}, "4411":{action:"Criar alternativa",done:false} }
+      },
+      {
+        materialCode:"TC-2278-AZ", brand:"petite", references:["1500","1501","1502"],
+        details:"Tecido plano tricoline — nova referência de estampa aprovada pelo estilo.",
+        column:"demanda_final", createdDaysAgo:8, enteredDaysAgo:1,
+        actionsInitial:{ "1500":{action:"Trocar alternativa",done:true}, "1501":{action:"Trocar alternativa",done:true}, "1502":{action:"Criar alternativa",done:true} },
+        actionsFinal:{ "1500":{action:"Atualizar OP",finalized:true}, "1501":{action:"Dividir OP",finalized:false}, "1502":{action:null,finalized:false} }
+      },
+      {
+        materialCode:"TC-0044-VD", brand:"Anime Bebe", references:["900"],
+        details:"Tecido moletom flanelado — troca concluída e homologada.",
+        column:"concluido", createdDaysAgo:10, enteredDaysAgo:0,
+        actionsInitial:{ "900":{action:"Trocar alternativa",done:true} },
+        actionsFinal:{ "900":{action:"Atualizar OP",finalized:true} }
+      },
+      {
+        materialCode:"TC-3382-VM", brand:"Momi", references:["1201","1202"],
+        details:"Malha viscose vermelha — lote descontinuado, necessário equivalente com mesma gramatura (180g/m²).",
+        column:"compras", createdDaysAgo:0, enteredDaysAgo:0
+      }
+    ];
+
+    return seeds.map(function(s){
+      var actionsInitial = s.actionsInitial || mkActionMap(s.references);
+      var actionsFinal = s.actionsFinal || mkActionMap(s.references, {finalized:true});
+      s.references.forEach(function(r){
+        if(!actionsInitial[r]) actionsInitial[r] = {action:null, done:false};
+        if(!actionsFinal[r]) actionsFinal[r] = {action:null, finalized:false};
+      });
+      return {
+        id: uid(),
+        materialCode: s.materialCode,
+        brand: s.brand,
+        references: s.references,
+        details: s.details,
+        column: s.column,
+        createdAt: daysAgo(s.createdDaysAgo),
+        enteredColumnAt: daysAgo(s.enteredDaysAgo),
+        actionsInitial: actionsInitial,
+        actionsFinal: actionsFinal
+      };
+    });
+  }
+
+  function load(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw){
+        var parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.cards)){ state = parsed; return; }
+      }
+    }catch(e){}
+    state = { cards: seedCards() };
+    save();
+  }
+  function save(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+
+  /* ---------- Business rules ---------- */
+  function initialComplete(card){
+    return card.references.every(function(r){ return card.actionsInitial[r] && card.actionsInitial[r].action; });
+  }
+  function engineeringComplete(card){
+    return card.references.every(function(r){ return card.actionsInitial[r] && card.actionsInitial[r].action && card.actionsInitial[r].done; });
+  }
+  function finalComplete(card){
+    return card.references.every(function(r){ return card.actionsFinal[r] && card.actionsFinal[r].action && card.actionsFinal[r].finalized; });
+  }
+  function validateMove(card, dest){
+    if (dest === card.column) return { ok:true };
+    if (dest === "engenharia" && !initialComplete(card)){
+      return { ok:false, reason:"Defina uma ação (Trocar ou Criar alternativa) para cada referência na Demanda (Inicial) antes de mover para Engenharia." };
+    }
+    if (dest === "demanda_final" && !engineeringComplete(card)){
+      return { ok:false, reason:"Todas as ações de Engenharia precisam estar marcadas como Concluídas antes de mover para Demanda (Final)." };
+    }
+    if (dest === "concluido" && !finalComplete(card)){
+      return { ok:false, reason:"Defina e finalize a ação de todas as referências na Demanda (Final) antes de concluir o cartão." };
+    }
+    return { ok:true };
+  }
+  function moveCard(cardId, dest){
+    var card = state.cards.find(function(c){ return c.id === cardId; });
+    if (!card) return;
+    if (dest === card.column) return;
+    var v = validateMove(card, dest);
+    if (!v.ok){
+      toast(v.reason, "error");
+      return;
+    }
+    card.column = dest;
+    card.enteredColumnAt = Date.now();
+    save();
+    renderAll();
+    if (panelCardId === cardId) renderPanel();
+    toast("Cartão movido para " + colLabel(dest) + ".", "success");
+  }
+
+  /* ---------- Toasts ---------- */
+  function toast(msg, kind){
+    var stack = document.getElementById("toastStack");
+    var el = document.createElement("div");
+    el.className = "toast" + (kind ? " " + kind : "");
+    el.textContent = msg;
+    stack.appendChild(el);
+    requestAnimationFrame(function(){ el.classList.add("show"); });
+    setTimeout(function(){
+      el.classList.remove("show");
+      setTimeout(function(){ el.remove(); }, 220);
+    }, 4200);
+  }
+
+  /* ---------- Icons ---------- */
+  var ICON_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>';
+  var ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
+  var ICON_CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+  /* ---------- Rendering: stats ---------- */
+  function renderStats(){
+    var wrap = document.getElementById("stats");
+    wrap.innerHTML = COLUMNS.map(function(col){
+      var cards = state.cards.filter(function(c){ return c.column === col.id; });
+      var late = cards.filter(function(c){ return daysBetween(c.enteredColumnAt) >= 3; }).length;
+      return (
+        '<div class="stat-tile">' +
+          '<div class="label">' + esc(col.label) + '</div>' +
+          '<div class="row">' +
+            '<span class="count">' + cards.length + '</span>' +
+            (late > 0 ? '<span class="late">' + late + ' atrasado' + (late>1?'s':'') + '</span>' : '') +
+          '</div>' +
+        '</div>'
+      );
+    }).join("");
+  }
+
+  /* ---------- Rendering: board ---------- */
+  function renderCard(card){
+    var brand = brandOf(card.brand);
+    var totalDays = daysBetween(card.createdAt);
+    var colDays = daysBetween(card.enteredColumnAt);
+    var late = colDays >= 3;
+    var visibleRefs = card.references.slice(0,3);
+    var extra = card.references.length - visibleRefs.length;
+    var ci = colIndex(card.column);
+
+    var dots = COLUMNS.map(function(c,i){
+      var cls = i < ci ? "past" : (i === ci ? "active" : "");
+      return '<span class="' + cls + '"></span>';
+    }).join("");
+
+    return (
+      '<div class="card" draggable="true" data-id="' + card.id + '" tabindex="0" role="button" ' +
+        'aria-label="' + esc(card.materialCode) + ', ' + esc(brand.name) + '" style="--brand-color:' + brand.bg + '">' +
+        '<div class="card-row-top">' +
+          '<span class="brand-chip" style="--brand-bg:' + brand.bg + ';--brand-fg:' + brand.fg + ';background:var(--brand-bg);color:var(--brand-fg);">' +
+            '<span class="dot"></span>' + esc(brand.name) +
+          '</span>' +
+          '<span class="card-code mono">' + esc(card.materialCode) + '</span>' +
+        '</div>' +
+        '<div class="ref-list">' +
+          visibleRefs.map(function(r){ return '<span class="ref-pill mono">' + esc(r) + '</span>'; }).join("") +
+          (extra > 0 ? '<span class="ref-pill more">+' + extra + '</span>' : '') +
+        '</div>' +
+        (card.details ? '<div class="card-details">' + esc(card.details) + '</div>' : '') +
+        '<div class="card-footer">' +
+          '<span class="time-badge">' + ICON_CLOCK + totalDays + 'd total</span>' +
+          '<span class="time-badge' + (late ? ' late' : '') + '">' + ICON_CLOCK + colDays + 'd na etapa</span>' +
+          '<span class="stage-dots">' + dots + '</span>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderAll(){
+    renderStats();
+    var board = document.getElementById("board");
+    board.innerHTML = COLUMNS.map(function(col){
+      var cards = state.cards.filter(function(c){ return c.column === col.id; });
+      var cardsHtml = cards.length
+        ? cards.map(renderCard).join("")
+        : '<div class="empty-hint">Nenhum cartão nesta etapa</div>';
+      return (
+        '<section class="column" style="--col-bg:var(--col-' + col.id.replace(/_/g,'-') + ');--col-accent:var(--col-' + col.id.replace(/_/g,'-') + '-accent)">' +
+          '<div class="column-head">' +
+            '<span class="column-title">' + esc(col.label) + '</span>' +
+            '<span class="column-count">' + cards.length + '</span>' +
+          '</div>' +
+          (col.id === "compras"
+            ? '<button class="new-request-btn" id="btnNewRequest">' + ICON_PLUS + 'Nova Solicitação</button>'
+            : '') +
+          '<div class="card-list" data-col="' + col.id + '">' + cardsHtml + '</div>' +
+        '</section>'
+      );
+    }).join("");
+
+    bindBoardEvents();
+  }
+
+  function bindBoardEvents(){
+    var btn = document.getElementById("btnNewRequest");
+    if (btn) btn.addEventListener("click", openCreatePanel);
+
+    document.querySelectorAll(".card").forEach(function(el){
+      el.addEventListener("click", function(){ openCardPanel(el.getAttribute("data-id")); });
+      el.addEventListener("keydown", function(e){
+        if (e.key === "Enter" || e.key === " "){ e.preventDefault(); openCardPanel(el.getAttribute("data-id")); }
+      });
+      el.addEventListener("dragstart", function(e){
+        e.dataTransfer.setData("text/plain", el.getAttribute("data-id"));
+        e.dataTransfer.effectAllowed = "move";
+        el.classList.add("dragging");
+      });
+      el.addEventListener("dragend", function(){ el.classList.remove("dragging"); });
+    });
+
+    document.querySelectorAll(".card-list").forEach(function(list){
+      list.addEventListener("dragover", function(e){
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        list.classList.add("drag-over");
+      });
+      list.addEventListener("dragleave", function(){ list.classList.remove("drag-over"); });
+      list.addEventListener("drop", function(e){
+        e.preventDefault();
+        list.classList.remove("drag-over");
+        var id = e.dataTransfer.getData("text/plain");
+        if (id) moveCard(id, list.getAttribute("data-col"));
+      });
+    });
+  }
+
+  /* ---------- Panel: create ---------- */
+  var overlay = document.getElementById("overlay");
+  var panelEl = document.getElementById("panel");
+  var panelCardId = null;
+  var lastFocused = null;
+
+  function openOverlayPanel(){
+    lastFocused = document.activeElement;
+    overlay.classList.add("open");
+    panelEl.classList.add("open");
+    document.addEventListener("keydown", onEscClose);
+    var first = panelEl.querySelector("input,select,textarea,button");
+    if (first) first.focus();
+  }
+  function closePanel(){
+    overlay.classList.remove("open");
+    panelEl.classList.remove("open");
+    panelCardId = null;
+    document.removeEventListener("keydown", onEscClose);
+    if (lastFocused && lastFocused.focus) lastFocused.focus();
+  }
+  function onEscClose(e){ if (e.key === "Escape") closePanel(); }
+  overlay.addEventListener("click", closePanel);
+
+  function openCreatePanel(){
+    panelCardId = null;
+    panelEl.innerHTML =
+      '<div class="panel-head">' +
+        '<div class="titles">' +
+          '<div class="code" id="panel-title">Nova Solicitação</div>' +
+          '<div class="meta">Setor de Compras</div>' +
+        '</div>' +
+        '<button class="icon-btn" id="btnClosePanel" aria-label="Fechar">' + ICON_CLOSE + '</button>' +
+      '</div>' +
+      '<div class="panel-body">' +
+        '<form id="createForm">' +
+          '<div class="field">' +
+            '<label for="fCode">Código do Material (Tecido ou Aviamento)</label>' +
+            '<input type="text" id="fCode" placeholder="Ex: TC-3382-VM" required>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="fRefs">Referências afetadas</label>' +
+            '<input type="text" id="fRefs" placeholder="Ex: 1201, 1202, 1310" required>' +
+            '<div class="hint">Separe múltiplas referências por vírgula.</div>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="fBrand">Marca</label>' +
+            '<select id="fBrand" required>' +
+              '<option value="" disabled selected>Selecionar marca…</option>' +
+              BRANDS.map(function(b){ return '<option value="' + esc(b.name) + '">' + esc(b.name) + '</option>'; }).join("") +
+            '</select>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="fDetails">Detalhes/Observações</label>' +
+            '<textarea id="fDetails" placeholder="Contexto adicional sobre a substituição…"></textarea>' +
+          '</div>' +
+          '<button type="submit" class="new-request-btn" style="width:100%;justify-content:center;margin:6px 0 0;">Criar Solicitação</button>' +
+        '</form>' +
+      '</div>';
+
+    document.getElementById("btnClosePanel").addEventListener("click", closePanel);
+    document.getElementById("createForm").addEventListener("submit", function(e){
+      e.preventDefault();
+      var code = document.getElementById("fCode").value.trim();
+      var refsRaw = document.getElementById("fRefs").value.trim();
+      var brand = document.getElementById("fBrand").value;
+      var details = document.getElementById("fDetails").value.trim();
+
+      var refs = refsRaw.split(",").map(function(r){ return r.trim(); }).filter(Boolean);
+      var uniqueRefs = refs.filter(function(r,i){ return refs.indexOf(r) === i; });
+
+      if (!code || !uniqueRefs.length || !brand){
+        toast("Preencha código do material, ao menos uma referência e a marca.", "error");
+        return;
+      }
+
+      var actionsInitial = {}, actionsFinal = {};
+      uniqueRefs.forEach(function(r){
+        actionsInitial[r] = { action:null, done:false };
+        actionsFinal[r] = { action:null, finalized:false };
+      });
+
+      var now = Date.now();
+      state.cards.push({
+        id: uid(),
+        materialCode: code,
+        brand: brand,
+        references: uniqueRefs,
+        details: details,
+        column: "compras",
+        createdAt: now,
+        enteredColumnAt: now,
+        actionsInitial: actionsInitial,
+        actionsFinal: actionsFinal
+      });
+      save();
+      renderAll();
+      closePanel();
+      toast("Solicitação " + code + " criada em Compras.", "success");
+    });
+
+    openOverlayPanel();
+  }
+
+  /* ---------- Panel: card management ---------- */
+  function openCardPanel(id){
+    panelCardId = id;
+    renderPanel();
+    openOverlayPanel();
+  }
+
+  function renderPanel(){
+    var card = state.cards.find(function(c){ return c.id === panelCardId; });
+    if (!card) return;
+    var brand = brandOf(card.brand);
+    var totalDays = daysBetween(card.createdAt);
+    var colDays = daysBetween(card.enteredColumnAt);
+
+    var initialOk = initialComplete(card);
+    var initialDoneCount = card.references.filter(function(r){ return card.actionsInitial[r] && card.actionsInitial[r].action; }).length;
+
+    var engOk = engineeringComplete(card);
+    var engDoneCount = card.references.filter(function(r){ return card.actionsInitial[r] && card.actionsInitial[r].done; }).length;
+
+    var finalOk = finalComplete(card);
+    var finalDoneCount = card.references.filter(function(r){ return card.actionsFinal[r] && card.actionsFinal[r].finalized; }).length;
+
+    panelEl.innerHTML =
+      '<div class="panel-head">' +
+        '<div class="titles">' +
+          '<div class="code mono" id="panel-title">' + esc(card.materialCode) + '</div>' +
+          '<div class="meta">Criado em ' + fmtDate(card.createdAt) + ' · ' + totalDays + ' dias no total · ' + colDays + ' dias em ' + esc(colLabel(card.column)) + '</div>' +
+        '</div>' +
+        '<button class="icon-btn" id="btnClosePanel" aria-label="Fechar">' + ICON_CLOSE + '</button>' +
+      '</div>' +
+      '<div class="panel-body">' +
+
+        '<div class="panel-section">' +
+          '<div class="section-label">Informações gerais</div>' +
+          '<div class="field" style="margin-bottom:8px;">' +
+            '<span class="brand-chip" style="--brand-bg:' + brand.bg + ';--brand-fg:' + brand.fg + ';background:var(--brand-bg);color:var(--brand-fg);"><span class="dot"></span>' + esc(brand.name) + '</span>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label>Referências afetadas</label>' +
+            '<div class="ref-list">' + card.references.map(function(r){ return '<span class="ref-pill mono">' + esc(r) + '</span>'; }).join("") + '</div>' +
+          '</div>' +
+          (card.details ? '<div class="field"><label>Detalhes/Observações</label><div class="detail-text">' + esc(card.details) + '</div></div>' : '') +
+        '</div>' +
+
+        '<div class="panel-section">' +
+          '<div class="section-label">Ações — Demanda (Inicial) <span class="badge ' + (initialOk?'ok':'pending') + '">' + initialDoneCount + '/' + card.references.length + ' definidas</span></div>' +
+          card.references.map(function(r){
+            var cur = card.actionsInitial[r].action || "";
+            return (
+              '<div class="ref-action-row">' +
+                '<span class="ref-tag mono">' + esc(r) + '</span>' +
+                '<select data-ref="' + esc(r) + '" class="initialActionSelect">' +
+                  '<option value="" ' + (cur===""?"selected":"") + ' disabled>Selecionar ação…</option>' +
+                  INITIAL_ACTIONS.map(function(a){ return '<option value="' + esc(a) + '" ' + (cur===a?"selected":"") + '>' + esc(a) + '</option>'; }).join("") +
+                '</select>' +
+              '</div>'
+            );
+          }).join("") +
+        '</div>' +
+
+        '<div class="panel-section">' +
+          '<div class="section-label">Ações — Engenharia <span class="badge ' + (engOk?'ok':'pending') + '">' + engDoneCount + '/' + card.references.length + ' concluídas</span></div>' +
+          card.references.map(function(r){
+            var a = card.actionsInitial[r];
+            var disabled = !a.action;
+            return (
+              '<div class="ref-action-row">' +
+                '<span class="ref-tag mono">' + esc(r) + '</span>' +
+                '<span class="readonly-action">' + (a.action ? esc(a.action) : '<em>Sem ação definida</em>') + '</span>' +
+                '<label class="check-label' + (disabled?' disabled':'') + '">' +
+                  '<input type="checkbox" class="engDoneCheck" data-ref="' + esc(r) + '" ' + (a.done?"checked":"") + (disabled?" disabled":"") + '> Concluída' +
+                '</label>' +
+              '</div>'
+            );
+          }).join("") +
+        '</div>' +
+
+        '<div class="panel-section">' +
+          '<div class="section-label">Ações — Demanda (Final) <span class="badge ' + (finalOk?'ok':'pending') + '">' + finalDoneCount + '/' + card.references.length + ' finalizadas</span></div>' +
+          card.references.map(function(r){
+            var f = card.actionsFinal[r];
+            var cur = f.action || "";
+            return (
+              '<div class="ref-action-row">' +
+                '<span class="ref-tag mono">' + esc(r) + '</span>' +
+                '<select data-ref="' + esc(r) + '" class="finalActionSelect">' +
+                  '<option value="" ' + (cur===""?"selected":"") + ' disabled>Selecionar ação…</option>' +
+                  FINAL_ACTIONS.map(function(a){ return '<option value="' + esc(a) + '" ' + (cur===a?"selected":"") + '>' + esc(a) + '</option>'; }).join("") +
+                '</select>' +
+                '<label class="check-label' + (!f.action?' disabled':'') + '">' +
+                  '<input type="checkbox" class="finalDoneCheck" data-ref="' + esc(r) + '" ' + (f.finalized?"checked":"") + (!f.action?" disabled":"") + '> Finalizada' +
+                '</label>' +
+              '</div>'
+            );
+          }).join("") +
+        '</div>' +
+
+        '<div class="panel-section">' +
+          '<div class="section-label">Mover cartão</div>' +
+          '<div class="move-grid">' +
+            COLUMNS.map(function(c){
+              var isCurrent = c.id === card.column;
+              var v = validateMove(card, c.id);
+              return '<button class="move-btn' + (isCurrent?' current':'') + (!isCurrent && !v.ok?' blocked':'') + '" data-dest="' + c.id + '"' + (isCurrent?' disabled':'') + '>' + esc(c.label) + '</button>';
+            }).join("") +
+          '</div>' +
+        '</div>' +
+
+        '<div class="panel-section">' +
+          '<button class="danger-link" id="btnDeleteCard">Excluir solicitação</button>' +
+        '</div>' +
+
+      '</div>';
+
+    document.getElementById("btnClosePanel").addEventListener("click", closePanel);
+
+    panelEl.querySelectorAll(".initialActionSelect").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        var ref = sel.getAttribute("data-ref");
+        card.actionsInitial[ref].action = sel.value || null;
+        save();
+        renderAll();
+        renderPanel();
+      });
+    });
+    panelEl.querySelectorAll(".engDoneCheck").forEach(function(chk){
+      chk.addEventListener("change", function(){
+        var ref = chk.getAttribute("data-ref");
+        card.actionsInitial[ref].done = chk.checked;
+        save();
+        renderAll();
+        renderPanel();
+      });
+    });
+    panelEl.querySelectorAll(".finalActionSelect").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        var ref = sel.getAttribute("data-ref");
+        card.actionsFinal[ref].action = sel.value || null;
+        save();
+        renderAll();
+        renderPanel();
+      });
+    });
+    panelEl.querySelectorAll(".finalDoneCheck").forEach(function(chk){
+      chk.addEventListener("change", function(){
+        var ref = chk.getAttribute("data-ref");
+        card.actionsFinal[ref].finalized = chk.checked;
+        save();
+        renderAll();
+        renderPanel();
+      });
+    });
+    panelEl.querySelectorAll(".move-btn").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        moveCard(card.id, btn.getAttribute("data-dest"));
+      });
+    });
+    var delBtn = document.getElementById("btnDeleteCard");
+    if (delBtn) delBtn.addEventListener("click", function(){
+      if (confirm("Excluir a solicitação " + card.materialCode + "? Esta ação não pode ser desfeita.")){
+        state.cards = state.cards.filter(function(c){ return c.id !== card.id; });
+        save();
+        renderAll();
+        closePanel();
+        toast("Solicitação excluída.", "success");
+      }
+    });
+  }
+
+  /* ---------- Init ---------- */
+  load();
+  renderAll();
+  setInterval(function(){ renderAll(); if (panelCardId) renderPanel(); }, 60000);
+})();
+</script>
