@@ -238,6 +238,16 @@
   }
   .ref-pill.more{color:var(--ink-faint);background:transparent;border-style:dashed;}
 
+  .swap-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;min-width:0;}
+  .swap-chip{
+    font-size:11px;font-weight:600;color:var(--ink);
+    background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:2.5px 7px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1 1 0;
+  }
+  .swap-chip.substitute{border-color:var(--success);color:var(--success);background:var(--success-soft);}
+  .swap-arrow{flex:none;color:var(--ink-faint);display:flex;}
+  .swap-arrow svg{width:12px;height:12px;display:block;}
+
   .card-details{
     font-size:12px;color:var(--ink-soft);margin-bottom:9px;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
@@ -478,44 +488,58 @@
     var seeds = [
       {
         materialCode:"AV-2201", brand:"Momi Mini", references:["555","556"],
-        details:"Linha de costura 40/2 poliéster — fornecedor habitual sem estoque para o lote atual.",
+        originalFabric:"Linha de costura 40/2 poliéster branca",
+        substituteFabric:"Linha de costura 40/2 poliéster off-white",
+        details:"Fornecedor habitual sem estoque para o lote atual.",
         column:"compras", createdDaysAgo:0, enteredDaysAgo:0
       },
       {
         materialCode:"AV-0567", brand:"Bimbi Menino", references:["3310","3311","3312"],
-        details:"Elástico 12mm — cor descontinuada pelo fornecedor, necessário localizar equivalente.",
+        originalFabric:"Elástico 12mm azul marinho",
+        substituteFabric:"Elástico 12mm azul petróleo",
+        details:"Cor descontinuada pelo fornecedor, necessário localizar equivalente.",
         column:"demanda_inicial", createdDaysAgo:4, enteredDaysAgo:4,
         actionsInitial:{ "3310":{action:"Trocar alternativa",done:false}, "3311":{action:"Criar alternativa",done:false}, "3312":{action:null,done:false} }
       },
       {
         materialCode:"TC-1190-OF", brand:"Youccie", references:["2200"],
-        details:"Tecido malha canelada — ajuste de gramatura solicitado pelo controle de qualidade.",
+        originalFabric:"Malha canelada 220g/m² caramelo",
+        substituteFabric:"Malha canelada 240g/m² caramelo",
+        details:"Ajuste de gramatura solicitado pelo controle de qualidade.",
         column:"demanda_inicial", createdDaysAgo:2, enteredDaysAgo:1,
         actionsInitial:{ "2200":{action:"Trocar alternativa",done:false} }
       },
       {
         materialCode:"AV-0912", brand:"Authoria", references:["4410","4411"],
-        details:"Zíper metálico 18cm — substituição por versão com trava de segurança infantil.",
+        originalFabric:"Zíper metálico 18cm comum",
+        substituteFabric:"Zíper metálico 18cm com trava de segurança infantil",
+        details:"Substituição solicitada pelo setor de segurança do produto.",
         column:"engenharia", createdDaysAgo:6, enteredDaysAgo:3,
         actionsInitial:{ "4410":{action:"Trocar alternativa",done:true}, "4411":{action:"Criar alternativa",done:false} }
       },
       {
         materialCode:"TC-2278-AZ", brand:"petite", references:["1500","1501","1502"],
-        details:"Tecido plano tricoline — nova referência de estampa aprovada pelo estilo.",
+        originalFabric:"Tricoline estampa poá azul",
+        substituteFabric:"Tricoline estampa floral azul",
+        details:"Nova referência de estampa aprovada pelo estilo.",
         column:"demanda_final", createdDaysAgo:8, enteredDaysAgo:1,
         actionsInitial:{ "1500":{action:"Trocar alternativa",done:true}, "1501":{action:"Trocar alternativa",done:true}, "1502":{action:"Criar alternativa",done:true} },
         actionsFinal:{ "1500":{action:"Atualizar OP",finalized:true}, "1501":{action:"Dividir OP",finalized:false}, "1502":{action:null,finalized:false} }
       },
       {
         materialCode:"TC-0044-VD", brand:"Anime Bebe", references:["900"],
-        details:"Tecido moletom flanelado — troca concluída e homologada.",
+        originalFabric:"Moletom flanelado verde musgo",
+        substituteFabric:"Moletom flanelado verde sálvia",
+        details:"Troca concluída e homologada.",
         column:"concluido", createdDaysAgo:10, enteredDaysAgo:0,
         actionsInitial:{ "900":{action:"Trocar alternativa",done:true} },
         actionsFinal:{ "900":{action:"Atualizar OP",finalized:true} }
       },
       {
         materialCode:"TC-3382-VM", brand:"Momi", references:["1201","1202"],
-        details:"Malha viscose vermelha — lote descontinuado, necessário equivalente com mesma gramatura (180g/m²).",
+        originalFabric:"Malha viscose 180g/m² vermelha",
+        substituteFabric:"Malha viscose 180g/m² bordô",
+        details:"Lote descontinuado, necessário equivalente com mesma gramatura.",
         column:"compras", createdDaysAgo:0, enteredDaysAgo:0
       }
     ];
@@ -530,6 +554,8 @@
       return {
         id: uid(),
         materialCode: s.materialCode,
+        originalFabric: s.originalFabric || "",
+        substituteFabric: s.substituteFabric || "",
         brand: s.brand,
         references: s.references,
         details: s.details,
@@ -615,6 +641,7 @@
   var ICON_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>';
   var ICON_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>';
   var ICON_CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var ICON_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M13 6l7 6-7 6"/></svg>';
 
   /* ---------- Rendering: stats ---------- */
   function renderStats(){
@@ -658,6 +685,12 @@
           '</span>' +
           '<span class="card-code mono">' + esc(card.materialCode) + '</span>' +
         '</div>' +
+        ((card.originalFabric || card.substituteFabric) ?
+          '<div class="swap-row">' +
+            '<span class="swap-chip" title="Tecido original">' + esc(card.originalFabric || "—") + '</span>' +
+            '<span class="swap-arrow">' + ICON_ARROW + '</span>' +
+            '<span class="swap-chip substitute" title="Tecido substituto">' + esc(card.substituteFabric || "a definir") + '</span>' +
+          '</div>' : '') +
         '<div class="ref-list">' +
           visibleRefs.map(function(r){ return '<span class="ref-pill mono">' + esc(r) + '</span>'; }).join("") +
           (extra > 0 ? '<span class="ref-pill more">+' + extra + '</span>' : '') +
@@ -771,6 +804,15 @@
             '<input type="text" id="fCode" placeholder="Ex: TC-3382-VM" required>' +
           '</div>' +
           '<div class="field">' +
+            '<label for="fOriginal">Tecido Original</label>' +
+            '<input type="text" id="fOriginal" placeholder="Ex: Malha viscose 180g/m² vermelha" required>' +
+          '</div>' +
+          '<div class="field">' +
+            '<label for="fSubstitute">Tecido Substituto</label>' +
+            '<input type="text" id="fSubstitute" placeholder="Ex: Malha viscose 180g/m² bordô" required>' +
+            '<div class="hint">Se ainda não houver um substituto definido, descreva a alternativa proposta.</div>' +
+          '</div>' +
+          '<div class="field">' +
             '<label for="fRefs">Referências afetadas</label>' +
             '<input type="text" id="fRefs" placeholder="Ex: 1201, 1202, 1310" required>' +
             '<div class="hint">Separe múltiplas referências por vírgula.</div>' +
@@ -794,6 +836,8 @@
     document.getElementById("createForm").addEventListener("submit", function(e){
       e.preventDefault();
       var code = document.getElementById("fCode").value.trim();
+      var originalFabric = document.getElementById("fOriginal").value.trim();
+      var substituteFabric = document.getElementById("fSubstitute").value.trim();
       var refsRaw = document.getElementById("fRefs").value.trim();
       var brand = document.getElementById("fBrand").value;
       var details = document.getElementById("fDetails").value.trim();
@@ -801,8 +845,8 @@
       var refs = refsRaw.split(",").map(function(r){ return r.trim(); }).filter(Boolean);
       var uniqueRefs = refs.filter(function(r,i){ return refs.indexOf(r) === i; });
 
-      if (!code || !uniqueRefs.length || !brand){
-        toast("Preencha código do material, ao menos uma referência e a marca.", "error");
+      if (!code || !originalFabric || !substituteFabric || !uniqueRefs.length || !brand){
+        toast("Preencha código do material, tecido original, tecido substituto, ao menos uma referência e a marca.", "error");
         return;
       }
 
@@ -816,6 +860,8 @@
       state.cards.push({
         id: uid(),
         materialCode: code,
+        originalFabric: originalFabric,
+        substituteFabric: substituteFabric,
         brand: brand,
         references: uniqueRefs,
         details: details,
@@ -872,6 +918,15 @@
           '<div class="field" style="margin-bottom:8px;">' +
             '<span class="brand-chip" style="--brand-bg:' + brand.bg + ';--brand-fg:' + brand.fg + ';background:var(--brand-bg);color:var(--brand-fg);"><span class="dot"></span>' + esc(brand.name) + '</span>' +
           '</div>' +
+          ((card.originalFabric || card.substituteFabric) ?
+            '<div class="field">' +
+              '<label>Tecido original → substituto</label>' +
+              '<div class="swap-row">' +
+                '<span class="swap-chip" title="Tecido original">' + esc(card.originalFabric || "—") + '</span>' +
+                '<span class="swap-arrow">' + ICON_ARROW + '</span>' +
+                '<span class="swap-chip substitute" title="Tecido substituto">' + esc(card.substituteFabric || "a definir") + '</span>' +
+              '</div>' +
+            '</div>' : '') +
           '<div class="field">' +
             '<label>Referências afetadas</label>' +
             '<div class="ref-list">' + card.references.map(function(r){ return '<span class="ref-pill mono">' + esc(r) + '</span>'; }).join("") + '</div>' +
