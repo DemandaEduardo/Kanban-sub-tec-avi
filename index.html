@@ -196,6 +196,7 @@
     flex:1;overflow-y:auto;padding:10px 12px 14px;display:flex;flex-direction:column;gap:10px;min-height:60px;
   }
   .card-list.drag-over{background:var(--accent-soft);border-radius:10px;}
+  .card-list.drag-over-invalid{background:var(--danger-soft);border-radius:10px;}
 
   .empty-hint{
     font-size:12px;color:var(--ink-faint);text-align:center;padding:18px 8px;border:1px dashed var(--line);border-radius:10px;
@@ -219,6 +220,11 @@
   .card:hover{box-shadow:var(--shadow-card-hover);}
   .card.dragging{opacity:0.4;}
   .card:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .card-cover{
+    display:block;width:calc(100% + 24px);height:96px;object-fit:cover;
+    margin:-11px -12px 9px;border-radius:9px 9px 0 0;background:var(--bg);
+  }
 
   .card-row-top{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
   .brand-chip{
@@ -339,6 +345,24 @@
   }
   .field .hint{font-size:11px;color:var(--ink-faint);margin-top:4px;}
 
+  .file-field{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .file-field input[type="file"]{display:none;}
+  .file-btn{
+    font-size:12px;font-weight:600;padding:7px 11px;border-radius:8px;cursor:pointer;
+    border:1px solid var(--line);background:var(--surface-raised);color:var(--ink);
+  }
+  .file-btn:hover{border-color:var(--accent);}
+  .file-preview{display:none;align-items:center;gap:8px;}
+  .file-preview.has-image{display:flex;}
+  .file-preview img{width:44px;height:44px;object-fit:cover;border-radius:7px;border:1px solid var(--line);}
+  .file-remove{background:none;border:none;color:var(--danger);font-size:11.5px;font-weight:600;cursor:pointer;padding:0;}
+  .file-remove:hover{text-decoration:underline;}
+
+  .attachment-preview{
+    display:block;width:100%;max-height:220px;object-fit:cover;border-radius:9px;
+    border:1px solid var(--line);cursor:zoom-in;margin-bottom:6px;
+  }
+
   .detail-text{font-size:12.5px;color:var(--ink-soft);white-space:pre-wrap;}
 
   .ref-action-row{
@@ -356,6 +380,17 @@
   .ref-action-row .readonly-action{
     flex:1;font-size:12.5px;color:var(--ink-soft);
   }
+
+  .ref-action-block{padding:8px 0;border-bottom:1px dashed var(--line-soft);}
+  .ref-action-block:last-child{border-bottom:none;}
+  .ref-action-block .action-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+  .ref-action-block .depara-row{display:flex;align-items:center;gap:8px;padding-left:52px;flex-wrap:wrap;}
+  .depara-label{font-size:11px;font-weight:600;color:var(--ink-faint);white-space:nowrap;}
+  .depara-input{
+    width:76px;font-size:12.5px;padding:5px 7px;border-radius:6px;
+    border:1px solid var(--line);background:var(--surface-raised);color:var(--ink);
+  }
+  .depara-input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent;}
   .check-label{
     display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--ink-soft);
     cursor:pointer;user-select:none;white-space:nowrap;
@@ -493,7 +528,10 @@
     function daysAgo(n){ return now - n*DAY_MS; }
     function mkActionMap(refs, options){
       var m = {};
-      refs.forEach(function(r){ m[r] = { action:null, done:false }; if(options&&options.finalized!==undefined) m[r].finalized=false; });
+      refs.forEach(function(r){
+        if (options && options.finalized!==undefined){ m[r] = { action:null, done:false, finalized:false }; }
+        else { m[r] = { action:null, done:false, deParaNumber:null, padrao:false }; }
+      });
       return m;
     }
     var seeds = [
@@ -508,7 +546,7 @@
         substituteFabric:"Elástico 12mm azul petróleo",
         details:"Cor descontinuada pelo fornecedor, necessário localizar equivalente.",
         column:"demanda_inicial", createdDaysAgo:4, enteredDaysAgo:4,
-        actionsInitial:{ "3310":{action:"Trocar alternativa",done:false}, "3311":{action:"Criar alternativa",done:false}, "3312":{action:null,done:false} }
+        actionsInitial:{ "3310":{action:"Trocar alternativa",done:false,deParaNumber:"8842",padrao:true}, "3311":{action:"Criar alternativa",done:false,deParaNumber:"8901",padrao:false}, "3312":{action:null,done:false,deParaNumber:null,padrao:false} }
       },
       { brand:"Youccie", references:["2200"],
         originalFabric:"Malha canelada 220g/m² caramelo",
@@ -552,7 +590,9 @@
       var actionsInitial = s.actionsInitial || mkActionMap(s.references);
       var actionsFinal = s.actionsFinal || mkActionMap(s.references, {finalized:true});
       s.references.forEach(function(r){
-        if(!actionsInitial[r]) actionsInitial[r] = {action:null, done:false};
+        if(!actionsInitial[r]) actionsInitial[r] = {action:null, done:false, deParaNumber:null, padrao:false};
+        if (actionsInitial[r].deParaNumber === undefined) actionsInitial[r].deParaNumber = null;
+        if (actionsInitial[r].padrao === undefined) actionsInitial[r].padrao = false;
         if(!actionsFinal[r]) actionsFinal[r] = {action:null, finalized:false};
       });
       return {
@@ -583,7 +623,25 @@
     save();
   }
   function save(){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); return true; }catch(e){ return false; }
+  }
+  function downscaleImage(file, maxDim, quality, onDone, onError){
+    var reader = new FileReader();
+    reader.onerror = function(){ onError && onError(); };
+    reader.onload = function(){
+      var img = new Image();
+      img.onerror = function(){ onError && onError(); };
+      img.onload = function(){
+        var scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        var w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+        var canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        onDone(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
   }
 
   /* ---------- Business rules ---------- */
@@ -682,6 +740,7 @@
     return (
       '<div class="card" draggable="true" data-id="' + card.id + '" tabindex="0" role="button" ' +
         'aria-label="' + esc(card.originalFabric) + ', ' + esc(brand.name) + '" style="--brand-color:' + brand.bg + '">' +
+        (card.image ? '<img class="card-cover" src="' + card.image + '" alt="" draggable="false">' : '') +
         '<div class="card-row-top">' +
           '<span class="brand-chip" style="--brand-bg:' + brand.bg + ';--brand-fg:' + brand.fg + ';background:var(--brand-bg);color:var(--brand-fg);">' +
             '<span class="dot"></span>' + esc(brand.name) +
@@ -731,6 +790,8 @@
     bindBoardEvents();
   }
 
+  var draggingCardId = null;
+
   function bindBoardEvents(){
     var btn = document.getElementById("btnNewRequest");
     if (btn) btn.addEventListener("click", openCreatePanel);
@@ -741,23 +802,34 @@
         if (e.key === "Enter" || e.key === " "){ e.preventDefault(); openCardPanel(el.getAttribute("data-id")); }
       });
       el.addEventListener("dragstart", function(e){
-        e.dataTransfer.setData("text/plain", el.getAttribute("data-id"));
+        draggingCardId = el.getAttribute("data-id");
+        e.dataTransfer.setData("text/plain", draggingCardId);
         e.dataTransfer.effectAllowed = "move";
         el.classList.add("dragging");
       });
-      el.addEventListener("dragend", function(){ el.classList.remove("dragging"); });
+      el.addEventListener("dragend", function(){
+        el.classList.remove("dragging");
+        draggingCardId = null;
+        document.querySelectorAll(".card-list").forEach(function(l){
+          l.classList.remove("drag-over", "drag-over-invalid");
+        });
+      });
     });
 
     document.querySelectorAll(".card-list").forEach(function(list){
       list.addEventListener("dragover", function(e){
         e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-        list.classList.add("drag-over");
+        var destCol = list.getAttribute("data-col");
+        var card = draggingCardId && state.cards.find(function(c){ return c.id === draggingCardId; });
+        var valid = !card || validateMove(card, destCol).ok;
+        e.dataTransfer.dropEffect = valid ? "move" : "none";
+        list.classList.toggle("drag-over", valid);
+        list.classList.toggle("drag-over-invalid", !valid);
       });
-      list.addEventListener("dragleave", function(){ list.classList.remove("drag-over"); });
+      list.addEventListener("dragleave", function(){ list.classList.remove("drag-over", "drag-over-invalid"); });
       list.addEventListener("drop", function(e){
         e.preventDefault();
-        list.classList.remove("drag-over");
+        list.classList.remove("drag-over", "drag-over-invalid");
         var id = e.dataTransfer.getData("text/plain");
         if (id) moveCard(id, list.getAttribute("data-col"));
       });
@@ -825,11 +897,39 @@
             '<label for="fDetails">Detalhes/Observações</label>' +
             '<textarea id="fDetails" placeholder="Contexto adicional sobre a substituição…"></textarea>' +
           '</div>' +
+          '<div class="field">' +
+            '<label>Imagem de referência (opcional)</label>' +
+            '<div class="file-field">' +
+              '<label class="file-btn" for="fImage">Selecionar imagem…</label>' +
+              '<input type="file" id="fImage" accept="image/*">' +
+              '<div class="file-preview" id="fImagePreview"><img id="fImagePreviewThumb" alt=""><button type="button" class="file-remove" id="fImageRemove">Remover</button></div>' +
+            '</div>' +
+            '<div class="hint">A imagem acompanha o cartão em todas as etapas até a conclusão.</div>' +
+          '</div>' +
           '<button type="submit" class="new-request-btn" style="width:100%;justify-content:center;margin:6px 0 0;">Criar Solicitação</button>' +
         '</form>' +
       '</div>';
 
+    var pendingImageDataUrl = null;
     document.getElementById("btnClosePanel").addEventListener("click", closePanel);
+
+    document.getElementById("fImage").addEventListener("change", function(e){
+      var file = e.target.files && e.target.files[0];
+      if (!file) return;
+      downscaleImage(file, 900, 0.8, function(dataUrl){
+        pendingImageDataUrl = dataUrl;
+        document.getElementById("fImagePreviewThumb").src = dataUrl;
+        document.getElementById("fImagePreview").classList.add("has-image");
+      }, function(){
+        toast("Não foi possível carregar a imagem selecionada.", "error");
+      });
+    });
+    document.getElementById("fImageRemove").addEventListener("click", function(){
+      pendingImageDataUrl = null;
+      document.getElementById("fImage").value = "";
+      document.getElementById("fImagePreview").classList.remove("has-image");
+    });
+
     document.getElementById("createForm").addEventListener("submit", function(e){
       e.preventDefault();
       var originalFabric = document.getElementById("fOriginal").value.trim();
@@ -848,7 +948,7 @@
 
       var actionsInitial = {}, actionsFinal = {};
       uniqueRefs.forEach(function(r){
-        actionsInitial[r] = { action:null, done:false };
+        actionsInitial[r] = { action:null, done:false, deParaNumber:null, padrao:false };
         actionsFinal[r] = { action:null, finalized:false };
       });
 
@@ -857,6 +957,7 @@
         id: uid(),
         originalFabric: originalFabric,
         substituteFabric: substituteFabric,
+        image: pendingImageDataUrl,
         brand: brand,
         references: uniqueRefs,
         details: details,
@@ -866,7 +967,9 @@
         actionsInitial: actionsInitial,
         actionsFinal: actionsFinal
       });
-      save();
+      if (!save()){
+        toast("Solicitação criada, mas o armazenamento local está cheio — considere anexar uma imagem menor.", "error");
+      }
       renderAll();
       closePanel();
       toast("Solicitação de " + originalFabric + " criada em Compras.", "success");
@@ -904,14 +1007,25 @@
         '<div class="panel-section">' +
           '<div class="section-label">Ações — Demanda (Inicial) <span class="badge ' + (initialOk?'ok':'pending') + '">' + initialDoneCount + '/' + card.references.length + ' definidas</span></div>' +
           card.references.map(function(r){
-            var cur = card.actionsInitial[r].action || "";
+            var entry = card.actionsInitial[r];
+            var cur = entry.action || "";
+            var deParaVal = entry.deParaNumber != null ? entry.deParaNumber : "";
             return (
-              '<div class="ref-action-row">' +
-                '<span class="ref-tag mono">' + esc(r) + '</span>' +
-                '<select data-ref="' + esc(r) + '" class="initialActionSelect">' +
-                  '<option value="" ' + (cur===""?"selected":"") + ' disabled>Selecionar ação…</option>' +
-                  INITIAL_ACTIONS.map(function(a){ return '<option value="' + esc(a) + '" ' + (cur===a?"selected":"") + '>' + esc(a) + '</option>'; }).join("") +
-                '</select>' +
+              '<div class="ref-action-block">' +
+                '<div class="action-row">' +
+                  '<span class="ref-tag mono">' + esc(r) + '</span>' +
+                  '<select data-ref="' + esc(r) + '" class="initialActionSelect">' +
+                    '<option value="" ' + (cur===""?"selected":"") + ' disabled>Selecionar ação…</option>' +
+                    INITIAL_ACTIONS.map(function(a){ return '<option value="' + esc(a) + '" ' + (cur===a?"selected":"") + '>' + esc(a) + '</option>'; }).join("") +
+                  '</select>' +
+                '</div>' +
+                '<div class="depara-row">' +
+                  '<span class="depara-label">De-Para</span>' +
+                  '<input type="number" inputmode="numeric" class="depara-input mono" data-ref="' + esc(r) + '" value="' + esc(deParaVal) + '" placeholder="Nº">' +
+                  '<label class="check-label">' +
+                    '<input type="checkbox" class="deparaPadraoCheck" data-ref="' + esc(r) + '" ' + (entry.padrao?"checked":"") + '> Padrão' +
+                  '</label>' +
+                '</div>' +
               '</div>'
             );
           }).join("") +
@@ -969,6 +1083,7 @@
 
         '<div class="panel-section">' +
           '<div class="section-label">Informações gerais</div>' +
+          (card.image ? '<img class="attachment-preview" id="attachmentPreview" src="' + card.image + '" alt="Imagem de referência anexada">' : '') +
           '<div class="field" style="margin-bottom:8px;">' +
             '<span class="brand-chip" style="--brand-bg:' + brand.bg + ';--brand-fg:' + brand.fg + ';background:var(--brand-bg);color:var(--brand-fg);"><span class="dot"></span>' + esc(brand.name) + '</span>' +
           '</div>' +
@@ -1008,6 +1123,11 @@
 
     document.getElementById("btnClosePanel").addEventListener("click", closePanel);
 
+    var attachmentPreview = document.getElementById("attachmentPreview");
+    if (attachmentPreview) attachmentPreview.addEventListener("click", function(){
+      window.open(card.image, "_blank");
+    });
+
     panelEl.querySelectorAll(".initialActionSelect").forEach(function(sel){
       sel.addEventListener("change", function(){
         var ref = sel.getAttribute("data-ref");
@@ -1015,6 +1135,22 @@
         save();
         renderAll();
         renderPanel();
+      });
+    });
+    panelEl.querySelectorAll(".depara-input").forEach(function(inp){
+      inp.addEventListener("change", function(){
+        var ref = inp.getAttribute("data-ref");
+        card.actionsInitial[ref].deParaNumber = inp.value.trim() === "" ? null : inp.value.trim();
+        save();
+        renderAll();
+      });
+    });
+    panelEl.querySelectorAll(".deparaPadraoCheck").forEach(function(chk){
+      chk.addEventListener("change", function(){
+        var ref = chk.getAttribute("data-ref");
+        card.actionsInitial[ref].padrao = chk.checked;
+        save();
+        renderAll();
       });
     });
     panelEl.querySelectorAll(".engDoneCheck").forEach(function(chk){
