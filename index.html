@@ -530,7 +530,7 @@
       var m = {};
       refs.forEach(function(r){
         if (options && options.finalized!==undefined){ m[r] = { action:null, done:false, finalized:false }; }
-        else { m[r] = { action:null, done:false, deParaNumber:null, padrao:false }; }
+        else { m[r] = { action:null, done:false, deNumber:null, paraNumber:null, padrao:false }; }
       });
       return m;
     }
@@ -546,7 +546,7 @@
         substituteFabric:"Elástico 12mm azul petróleo",
         details:"Cor descontinuada pelo fornecedor, necessário localizar equivalente.",
         column:"demanda_inicial", createdDaysAgo:4, enteredDaysAgo:4,
-        actionsInitial:{ "3310":{action:"Trocar alternativa",done:false,deParaNumber:"8842",padrao:true}, "3311":{action:"Criar alternativa",done:false,deParaNumber:"8901",padrao:false}, "3312":{action:null,done:false,deParaNumber:null,padrao:false} }
+        actionsInitial:{ "3310":{action:"Trocar alternativa",done:false,deNumber:"3310",paraNumber:"8842",padrao:true}, "3311":{action:"Criar alternativa",done:false,deNumber:"3311",paraNumber:"8901",padrao:false}, "3312":{action:null,done:false,deNumber:null,paraNumber:null,padrao:false} }
       },
       { brand:"Youccie", references:["2200"],
         originalFabric:"Malha canelada 220g/m² caramelo",
@@ -590,8 +590,9 @@
       var actionsInitial = s.actionsInitial || mkActionMap(s.references);
       var actionsFinal = s.actionsFinal || mkActionMap(s.references, {finalized:true});
       s.references.forEach(function(r){
-        if(!actionsInitial[r]) actionsInitial[r] = {action:null, done:false, deParaNumber:null, padrao:false};
-        if (actionsInitial[r].deParaNumber === undefined) actionsInitial[r].deParaNumber = null;
+        if(!actionsInitial[r]) actionsInitial[r] = {action:null, done:false, deNumber:null, paraNumber:null, padrao:false};
+        if (actionsInitial[r].deNumber === undefined) actionsInitial[r].deNumber = null;
+        if (actionsInitial[r].paraNumber === undefined) actionsInitial[r].paraNumber = null;
         if (actionsInitial[r].padrao === undefined) actionsInitial[r].padrao = false;
         if(!actionsFinal[r]) actionsFinal[r] = {action:null, finalized:false};
       });
@@ -948,7 +949,7 @@
 
       var actionsInitial = {}, actionsFinal = {};
       uniqueRefs.forEach(function(r){
-        actionsInitial[r] = { action:null, done:false, deParaNumber:null, padrao:false };
+        actionsInitial[r] = { action:null, done:false, deNumber:null, paraNumber:null, padrao:false };
         actionsFinal[r] = { action:null, finalized:false };
       });
 
@@ -1009,7 +1010,8 @@
           card.references.map(function(r){
             var entry = card.actionsInitial[r];
             var cur = entry.action || "";
-            var deParaVal = entry.deParaNumber != null ? entry.deParaNumber : "";
+            var deVal = entry.deNumber != null ? entry.deNumber : "";
+            var paraVal = entry.paraNumber != null ? entry.paraNumber : "";
             return (
               '<div class="ref-action-block">' +
                 '<div class="action-row">' +
@@ -1020,8 +1022,10 @@
                   '</select>' +
                 '</div>' +
                 '<div class="depara-row">' +
-                  '<span class="depara-label">De-Para</span>' +
-                  '<input type="number" inputmode="numeric" class="depara-input mono" data-ref="' + esc(r) + '" value="' + esc(deParaVal) + '" placeholder="Nº">' +
+                  '<span class="depara-label">De</span>' +
+                  '<input type="number" inputmode="numeric" class="depara-input mono" data-ref="' + esc(r) + '" data-field="de" value="' + esc(deVal) + '" placeholder="Nº">' +
+                  '<span class="depara-label">Para</span>' +
+                  '<input type="number" inputmode="numeric" class="depara-input mono" data-ref="' + esc(r) + '" data-field="para" value="' + esc(paraVal) + '" placeholder="Nº">' +
                   '<label class="check-label">' +
                     '<input type="checkbox" class="deparaPadraoCheck" data-ref="' + esc(r) + '" ' + (entry.padrao?"checked":"") + '> Padrão' +
                   '</label>' +
@@ -1140,7 +1144,8 @@
     panelEl.querySelectorAll(".depara-input").forEach(function(inp){
       inp.addEventListener("change", function(){
         var ref = inp.getAttribute("data-ref");
-        card.actionsInitial[ref].deParaNumber = inp.value.trim() === "" ? null : inp.value.trim();
+        var field = inp.getAttribute("data-field") === "para" ? "paraNumber" : "deNumber";
+        card.actionsInitial[ref][field] = inp.value.trim() === "" ? null : inp.value.trim();
         save();
         renderAll();
       });
