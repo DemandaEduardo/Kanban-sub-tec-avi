@@ -898,6 +898,65 @@
     var finalOk = finalComplete(card);
     var finalDoneCount = card.references.filter(function(r){ return card.actionsFinal[r] && card.actionsFinal[r].finalized; }).length;
 
+    var actionsSectionHtml = "";
+    if (card.column === "demanda_inicial"){
+      actionsSectionHtml =
+        '<div class="panel-section">' +
+          '<div class="section-label">Ações — Demanda (Inicial) <span class="badge ' + (initialOk?'ok':'pending') + '">' + initialDoneCount + '/' + card.references.length + ' definidas</span></div>' +
+          card.references.map(function(r){
+            var cur = card.actionsInitial[r].action || "";
+            return (
+              '<div class="ref-action-row">' +
+                '<span class="ref-tag mono">' + esc(r) + '</span>' +
+                '<select data-ref="' + esc(r) + '" class="initialActionSelect">' +
+                  '<option value="" ' + (cur===""?"selected":"") + ' disabled>Selecionar ação…</option>' +
+                  INITIAL_ACTIONS.map(function(a){ return '<option value="' + esc(a) + '" ' + (cur===a?"selected":"") + '>' + esc(a) + '</option>'; }).join("") +
+                '</select>' +
+              '</div>'
+            );
+          }).join("") +
+        '</div>';
+    } else if (card.column === "engenharia"){
+      actionsSectionHtml =
+        '<div class="panel-section">' +
+          '<div class="section-label">Ações — Engenharia <span class="badge ' + (engOk?'ok':'pending') + '">' + engDoneCount + '/' + card.references.length + ' concluídas</span></div>' +
+          card.references.map(function(r){
+            var a = card.actionsInitial[r];
+            var disabled = !a.action;
+            return (
+              '<div class="ref-action-row">' +
+                '<span class="ref-tag mono">' + esc(r) + '</span>' +
+                '<span class="readonly-action">' + (a.action ? esc(a.action) : '<em>Sem ação definida</em>') + '</span>' +
+                '<label class="check-label' + (disabled?' disabled':'') + '">' +
+                  '<input type="checkbox" class="engDoneCheck" data-ref="' + esc(r) + '" ' + (a.done?"checked":"") + (disabled?" disabled":"") + '> Concluída' +
+                '</label>' +
+              '</div>'
+            );
+          }).join("") +
+        '</div>';
+    } else if (card.column === "demanda_final"){
+      actionsSectionHtml =
+        '<div class="panel-section">' +
+          '<div class="section-label">Ações — Demanda (Final) <span class="badge ' + (finalOk?'ok':'pending') + '">' + finalDoneCount + '/' + card.references.length + ' finalizadas</span></div>' +
+          card.references.map(function(r){
+            var f = card.actionsFinal[r];
+            var cur = f.action || "";
+            return (
+              '<div class="ref-action-row">' +
+                '<span class="ref-tag mono">' + esc(r) + '</span>' +
+                '<select data-ref="' + esc(r) + '" class="finalActionSelect">' +
+                  '<option value="" ' + (cur===""?"selected":"") + ' disabled>Selecionar ação…</option>' +
+                  FINAL_ACTIONS.map(function(a){ return '<option value="' + esc(a) + '" ' + (cur===a?"selected":"") + '>' + esc(a) + '</option>'; }).join("") +
+                '</select>' +
+                '<label class="check-label' + (!f.action?' disabled':'') + '">' +
+                  '<input type="checkbox" class="finalDoneCheck" data-ref="' + esc(r) + '" ' + (f.finalized?"checked":"") + (!f.action?" disabled":"") + '> Finalizada' +
+                '</label>' +
+              '</div>'
+            );
+          }).join("") +
+        '</div>';
+    }
+
     panelEl.innerHTML =
       '<div class="panel-head">' +
         '<div class="titles">' +
@@ -928,58 +987,7 @@
           (card.details ? '<div class="field"><label>Detalhes/Observações</label><div class="detail-text">' + esc(card.details) + '</div></div>' : '') +
         '</div>' +
 
-        '<div class="panel-section">' +
-          '<div class="section-label">Ações — Demanda (Inicial) <span class="badge ' + (initialOk?'ok':'pending') + '">' + initialDoneCount + '/' + card.references.length + ' definidas</span></div>' +
-          card.references.map(function(r){
-            var cur = card.actionsInitial[r].action || "";
-            return (
-              '<div class="ref-action-row">' +
-                '<span class="ref-tag mono">' + esc(r) + '</span>' +
-                '<select data-ref="' + esc(r) + '" class="initialActionSelect">' +
-                  '<option value="" ' + (cur===""?"selected":"") + ' disabled>Selecionar ação…</option>' +
-                  INITIAL_ACTIONS.map(function(a){ return '<option value="' + esc(a) + '" ' + (cur===a?"selected":"") + '>' + esc(a) + '</option>'; }).join("") +
-                '</select>' +
-              '</div>'
-            );
-          }).join("") +
-        '</div>' +
-
-        '<div class="panel-section">' +
-          '<div class="section-label">Ações — Engenharia <span class="badge ' + (engOk?'ok':'pending') + '">' + engDoneCount + '/' + card.references.length + ' concluídas</span></div>' +
-          card.references.map(function(r){
-            var a = card.actionsInitial[r];
-            var disabled = !a.action;
-            return (
-              '<div class="ref-action-row">' +
-                '<span class="ref-tag mono">' + esc(r) + '</span>' +
-                '<span class="readonly-action">' + (a.action ? esc(a.action) : '<em>Sem ação definida</em>') + '</span>' +
-                '<label class="check-label' + (disabled?' disabled':'') + '">' +
-                  '<input type="checkbox" class="engDoneCheck" data-ref="' + esc(r) + '" ' + (a.done?"checked":"") + (disabled?" disabled":"") + '> Concluída' +
-                '</label>' +
-              '</div>'
-            );
-          }).join("") +
-        '</div>' +
-
-        '<div class="panel-section">' +
-          '<div class="section-label">Ações — Demanda (Final) <span class="badge ' + (finalOk?'ok':'pending') + '">' + finalDoneCount + '/' + card.references.length + ' finalizadas</span></div>' +
-          card.references.map(function(r){
-            var f = card.actionsFinal[r];
-            var cur = f.action || "";
-            return (
-              '<div class="ref-action-row">' +
-                '<span class="ref-tag mono">' + esc(r) + '</span>' +
-                '<select data-ref="' + esc(r) + '" class="finalActionSelect">' +
-                  '<option value="" ' + (cur===""?"selected":"") + ' disabled>Selecionar ação…</option>' +
-                  FINAL_ACTIONS.map(function(a){ return '<option value="' + esc(a) + '" ' + (cur===a?"selected":"") + '>' + esc(a) + '</option>'; }).join("") +
-                '</select>' +
-                '<label class="check-label' + (!f.action?' disabled':'') + '">' +
-                  '<input type="checkbox" class="finalDoneCheck" data-ref="' + esc(r) + '" ' + (f.finalized?"checked":"") + (!f.action?" disabled":"") + '> Finalizada' +
-                '</label>' +
-              '</div>'
-            );
-          }).join("") +
-        '</div>' +
+        actionsSectionHtml +
 
         '<div class="panel-section">' +
           '<div class="section-label">Mover cartão</div>' +
