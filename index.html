@@ -285,6 +285,17 @@
   .stage-dots span.active{background:var(--col-accent);}
   .stage-dots span.past{background:var(--ink-faint);}
 
+  .eng-flags{display:flex;gap:3px;}
+  .eng-flag{
+    width:16px;height:16px;border-radius:4px;
+    font-size:9.5px;font-weight:800;color:#fff;
+    display:flex;align-items:center;justify-content:center;line-height:1;
+  }
+  .eng-flag.done{background:var(--success);}
+  .eng-flag.pending{background:var(--danger);}
+
+  .eng-flags-toggle{display:flex;gap:10px;flex-wrap:wrap;padding-left:52px;}
+
   /* ---------- Overlay + Panel ---------- */
   .overlay{
     position:fixed;inset:0;background:rgba(10,12,14,0.42);
@@ -493,6 +504,25 @@
 
   var INITIAL_ACTIONS = ["Trocar alternativa", "Criar alternativa"];
   var FINAL_ACTIONS = ["Dividir OP", "Atualizar OP", "Gerar nova OP"];
+  var ENG_FLAGS = [
+    { key:"encaixe", label:"Encaixe", initial:"E" },
+    { key:"sequencia", label:"Sequência", initial:"S" },
+    { key:"ficha", label:"Ficha", initial:"F" }
+  ];
+
+  function defaultEngFlags(){ return { encaixe:false, sequencia:false, ficha:false }; }
+  function buildEngFlags(refs){
+    var m = {};
+    refs.forEach(function(r){ m[r] = defaultEngFlags(); });
+    return m;
+  }
+  function ensureEngFlags(card){
+    if (!card.engFlags || typeof card.engFlags !== "object") card.engFlags = {};
+    card.references.forEach(function(r){
+      if (!card.engFlags[r]) card.engFlags[r] = defaultEngFlags();
+      else ENG_FLAGS.forEach(function(f){ if (card.engFlags[r][f.key] === undefined) card.engFlags[r][f.key] = false; });
+    });
+  }
 
   function brandOf(name){
     for (var i=0;i<BRANDS.length;i++){ if (BRANDS[i].name === name) return BRANDS[i]; }
@@ -569,7 +599,8 @@
         substituteFabric:"Zíper metálico 18cm com trava de segurança infantil",
         details:"Substituição solicitada pelo setor de segurança do produto.",
         column:"engenharia", createdDaysAgo:6, enteredDaysAgo:3,
-        actionsInitial:{ "4410":{action:"Trocar alternativa",done:true,deNumber:"4410",paraNumber:"4488",padrao:true}, "4411":{action:"Criar alternativa",done:false,deNumber:null,paraNumber:null,padrao:false} }
+        actionsInitial:{ "4410":{action:"Trocar alternativa",done:true,deNumber:"4410",paraNumber:"4488",padrao:true}, "4411":{action:"Criar alternativa",done:false,deNumber:null,paraNumber:null,padrao:false} },
+        engFlags:{ "4410":{encaixe:true,sequencia:true,ficha:false}, "4411":{encaixe:false,sequencia:false,ficha:false} }
       },
       { brand:"petite", references:["1500","1501","1502"],
         originalFabric:"Tricoline estampa poá azul",
@@ -577,7 +608,8 @@
         details:"Nova referência de estampa aprovada pelo estilo.",
         column:"demanda_final", createdDaysAgo:8, enteredDaysAgo:1,
         actionsInitial:{ "1500":{action:"Trocar alternativa",done:true}, "1501":{action:"Trocar alternativa",done:true}, "1502":{action:"Criar alternativa",done:true} },
-        actionsFinal:{ "1500":{action:"Atualizar OP",finalized:true}, "1501":{action:"Dividir OP",finalized:false}, "1502":{action:null,finalized:false} }
+        actionsFinal:{ "1500":{action:"Atualizar OP",finalized:true}, "1501":{action:"Dividir OP",finalized:false}, "1502":{action:null,finalized:false} },
+        engFlags:{ "1500":{encaixe:true,sequencia:true,ficha:true}, "1501":{encaixe:true,sequencia:true,ficha:true}, "1502":{encaixe:true,sequencia:true,ficha:true} }
       },
       { brand:"Anime Bebe", references:["900"],
         originalFabric:"Moletom flanelado verde musgo",
@@ -585,7 +617,8 @@
         details:"Troca concluída e homologada.",
         column:"concluido", createdDaysAgo:10, enteredDaysAgo:0,
         actionsInitial:{ "900":{action:"Trocar alternativa",done:true} },
-        actionsFinal:{ "900":{action:"Atualizar OP",finalized:true} }
+        actionsFinal:{ "900":{action:"Atualizar OP",finalized:true} },
+        engFlags:{ "900":{encaixe:true,sequencia:true,ficha:true} }
       },
       { brand:"Momi", references:["1201","1202"],
         originalFabric:"Malha viscose 180g/m² vermelha",
@@ -598,12 +631,14 @@
     return seeds.map(function(s){
       var actionsInitial = s.actionsInitial || mkActionMap(s.references);
       var actionsFinal = s.actionsFinal || mkActionMap(s.references, {finalized:true});
+      var engFlags = s.engFlags || {};
       s.references.forEach(function(r){
         if(!actionsInitial[r]) actionsInitial[r] = {action:null, done:false, deNumber:null, paraNumber:null, padrao:false};
         if (actionsInitial[r].deNumber === undefined) actionsInitial[r].deNumber = null;
         if (actionsInitial[r].paraNumber === undefined) actionsInitial[r].paraNumber = null;
         if (actionsInitial[r].padrao === undefined) actionsInitial[r].padrao = false;
         if(!actionsFinal[r]) actionsFinal[r] = {action:null, finalized:false};
+        if(!engFlags[r]) engFlags[r] = defaultEngFlags();
       });
       return {
         id: uid(),
@@ -616,7 +651,8 @@
         createdAt: daysAgo(s.createdDaysAgo),
         enteredColumnAt: daysAgo(s.enteredDaysAgo),
         actionsInitial: actionsInitial,
-        actionsFinal: actionsFinal
+        actionsFinal: actionsFinal,
+        engFlags: engFlags
       };
     });
   }
@@ -626,7 +662,11 @@
       var raw = localStorage.getItem(STORAGE_KEY);
       if (raw){
         var parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.cards)){ state = parsed; return; }
+        if (parsed && Array.isArray(parsed.cards)){
+          parsed.cards.forEach(ensureEngFlags);
+          state = parsed;
+          return;
+        }
       }
     }catch(e){}
     state = { cards: seedCards() };
@@ -659,7 +699,11 @@
     return card.references.every(function(r){ return card.actionsInitial[r] && card.actionsInitial[r].action; });
   }
   function engineeringComplete(card){
-    return card.references.every(function(r){ return card.actionsInitial[r] && card.actionsInitial[r].action && card.actionsInitial[r].done; });
+    var flagsByRef = card.engFlags || {};
+    return card.references.every(function(r){
+      var f = flagsByRef[r];
+      return f && ENG_FLAGS.every(function(flag){ return !!f[flag.key]; });
+    });
   }
   function finalComplete(card){
     return card.references.every(function(r){ return card.actionsFinal[r] && card.actionsFinal[r].action && card.actionsFinal[r].finalized; });
@@ -748,6 +792,17 @@
       return '<span class="' + cls + '"></span>';
     }).join("");
 
+    var showEngFlags = ci >= colIndex("engenharia");
+    var engFlagsByRef = card.engFlags || {};
+    var engFlagsHtml = showEngFlags
+      ? '<span class="eng-flags" title="Encaixe / Sequência / Ficha — todas as referências">' +
+          ENG_FLAGS.map(function(f){
+            var allDone = card.references.every(function(r){ return engFlagsByRef[r] && engFlagsByRef[r][f.key]; });
+            return '<span class="eng-flag ' + (allDone ? "done" : "pending") + '">' + f.initial + '</span>';
+          }).join("") +
+        '</span>'
+      : "";
+
     return (
       '<div class="card" draggable="true" data-id="' + card.id + '" tabindex="0" role="button" ' +
         'aria-label="' + esc(card.originalFabric) + ', ' + esc(brand.name) + '" style="--brand-color:' + brand.bg + '">' +
@@ -770,6 +825,7 @@
         '<div class="card-footer">' +
           '<span class="time-badge">' + ICON_CLOCK + totalDays + 'd total</span>' +
           '<span class="time-badge' + (late ? ' late' : '') + '">' + ICON_CLOCK + colDays + 'd na etapa</span>' +
+          engFlagsHtml +
           '<span class="stage-dots">' + dots + '</span>' +
         '</div>' +
       '</div>'
@@ -976,7 +1032,8 @@
         createdAt: now,
         enteredColumnAt: now,
         actionsInitial: actionsInitial,
-        actionsFinal: actionsFinal
+        actionsFinal: actionsFinal,
+        engFlags: buildEngFlags(uniqueRefs)
       });
       if (!save()){
         toast("Solicitação criada, mas o armazenamento local está cheio — considere anexar uma imagem menor.", "error");
@@ -1006,8 +1063,14 @@
     var initialOk = initialComplete(card);
     var initialDoneCount = card.references.filter(function(r){ return card.actionsInitial[r] && card.actionsInitial[r].action; }).length;
 
+    var engFlagsByRef = card.engFlags || {};
     var engOk = engineeringComplete(card);
-    var engDoneCount = card.references.filter(function(r){ return card.actionsInitial[r] && card.actionsInitial[r].done; }).length;
+    var engFlagsTotal = card.references.length * ENG_FLAGS.length;
+    var engFlagsDone = 0;
+    card.references.forEach(function(r){
+      var f = engFlagsByRef[r] || {};
+      ENG_FLAGS.forEach(function(flag){ if (f[flag.key]) engFlagsDone++; });
+    });
 
     var finalOk = finalComplete(card);
     var finalDoneCount = card.references.filter(function(r){ return card.actionsFinal[r] && card.actionsFinal[r].finalized; }).length;
@@ -1047,17 +1110,25 @@
     } else if (card.column === "engenharia"){
       actionsSectionHtml =
         '<div class="panel-section">' +
-          '<div class="section-label">Ações — Engenharia <span class="badge ' + (engOk?'ok':'pending') + '">' + engDoneCount + '/' + card.references.length + ' concluídas</span></div>' +
+          '<div class="section-label">Ações — Engenharia <span class="badge ' + (engOk?'ok':'pending') + '">' + engFlagsDone + '/' + engFlagsTotal + ' concluídas</span></div>' +
           card.references.map(function(r){
             var a = card.actionsInitial[r];
-            var disabled = !a.action;
+            var f = engFlagsByRef[r] || defaultEngFlags();
             return (
-              '<div class="ref-action-row">' +
-                '<span class="ref-tag mono">' + esc(r) + '</span>' +
-                '<span class="readonly-action">' + (a.action ? esc(formatInitialAction(a)) : '<em>Sem ação definida</em>') + '</span>' +
-                '<label class="check-label' + (disabled?' disabled':'') + '">' +
-                  '<input type="checkbox" class="engDoneCheck" data-ref="' + esc(r) + '" ' + (a.done?"checked":"") + (disabled?" disabled":"") + '> Concluída' +
-                '</label>' +
+              '<div class="ref-action-block">' +
+                '<div class="action-row">' +
+                  '<span class="ref-tag mono">' + esc(r) + '</span>' +
+                  '<span class="readonly-action">' + (a.action ? esc(formatInitialAction(a)) : '<em>Sem ação definida</em>') + '</span>' +
+                '</div>' +
+                '<div class="eng-flags-toggle">' +
+                  ENG_FLAGS.map(function(flag){
+                    return (
+                      '<label class="check-label">' +
+                        '<input type="checkbox" class="engFlagCheck" data-ref="' + esc(r) + '" data-flag="' + flag.key + '" ' + (f[flag.key]?"checked":"") + '> ' + esc(flag.label) + ' (' + flag.initial + ')' +
+                      '</label>'
+                    );
+                  }).join("") +
+                '</div>' +
               '</div>'
             );
           }).join("") +
@@ -1168,10 +1239,13 @@
         renderAll();
       });
     });
-    panelEl.querySelectorAll(".engDoneCheck").forEach(function(chk){
+    panelEl.querySelectorAll(".engFlagCheck").forEach(function(chk){
       chk.addEventListener("change", function(){
         var ref = chk.getAttribute("data-ref");
-        card.actionsInitial[ref].done = chk.checked;
+        var key = chk.getAttribute("data-flag");
+        if (!card.engFlags) card.engFlags = {};
+        if (!card.engFlags[ref]) card.engFlags[ref] = defaultEngFlags();
+        card.engFlags[ref][key] = chk.checked;
         save();
         renderAll();
         renderPanel();
