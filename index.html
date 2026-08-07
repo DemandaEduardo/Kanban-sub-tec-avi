@@ -515,6 +515,15 @@
     });
   }
   function daysBetween(ts){ return Math.floor((Date.now() - ts) / DAY_MS); }
+  function formatInitialAction(entry){
+    if (!entry.action) return "";
+    var parts = [entry.action];
+    if (entry.deNumber != null && entry.deNumber !== "" && entry.paraNumber != null && entry.paraNumber !== ""){
+      parts.push(entry.deNumber + " para " + entry.paraNumber);
+    }
+    if (entry.padrao) parts.push("padrão");
+    return parts.join(" - ");
+  }
   function fmtDate(ts){
     var d = new Date(ts);
     return String(d.getDate()).padStart(2,"0") + "/" + String(d.getMonth()+1).padStart(2,"0") + "/" + d.getFullYear();
@@ -560,7 +569,7 @@
         substituteFabric:"Zíper metálico 18cm com trava de segurança infantil",
         details:"Substituição solicitada pelo setor de segurança do produto.",
         column:"engenharia", createdDaysAgo:6, enteredDaysAgo:3,
-        actionsInitial:{ "4410":{action:"Trocar alternativa",done:true}, "4411":{action:"Criar alternativa",done:false} }
+        actionsInitial:{ "4410":{action:"Trocar alternativa",done:true,deNumber:"4410",paraNumber:"4488",padrao:true}, "4411":{action:"Criar alternativa",done:false,deNumber:null,paraNumber:null,padrao:false} }
       },
       { brand:"petite", references:["1500","1501","1502"],
         originalFabric:"Tricoline estampa poá azul",
@@ -1044,7 +1053,7 @@
             return (
               '<div class="ref-action-row">' +
                 '<span class="ref-tag mono">' + esc(r) + '</span>' +
-                '<span class="readonly-action">' + (a.action ? esc(a.action) : '<em>Sem ação definida</em>') + '</span>' +
+                '<span class="readonly-action">' + (a.action ? esc(formatInitialAction(a)) : '<em>Sem ação definida</em>') + '</span>' +
                 '<label class="check-label' + (disabled?' disabled':'') + '">' +
                   '<input type="checkbox" class="engDoneCheck" data-ref="' + esc(r) + '" ' + (a.done?"checked":"") + (disabled?" disabled":"") + '> Concluída' +
                 '</label>' +
