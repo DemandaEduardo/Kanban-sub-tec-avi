@@ -17,6 +17,10 @@
     --success-soft:rgba(63,122,92,0.14);
     --danger:#B23B3B;
     --danger-soft:rgba(178,59,59,0.14);
+    --yellow:#9C7A0A;
+    --yellow-soft:rgba(156,122,10,0.16);
+    --blue:#2E6DA4;
+    --blue-soft:rgba(46,109,164,0.14);
     --shadow-card:0 1px 2px rgba(32,36,42,0.06), 0 1px 1px rgba(32,36,42,0.04);
     --shadow-card-hover:0 6px 16px rgba(32,36,42,0.12), 0 2px 4px rgba(32,36,42,0.06);
     --shadow-panel:-8px 0 32px rgba(20,22,26,0.18);
@@ -50,6 +54,10 @@
       --success-soft:rgba(111,191,151,0.16);
       --danger:#E68383;
       --danger-soft:rgba(230,131,131,0.18);
+      --yellow:#E8CB5C;
+      --yellow-soft:rgba(232,203,92,0.18);
+      --blue:#7FAEDD;
+      --blue-soft:rgba(127,174,221,0.18);
       --shadow-card:0 1px 2px rgba(0,0,0,0.3);
       --shadow-card-hover:0 8px 20px rgba(0,0,0,0.4);
       --shadow-panel:-8px 0 32px rgba(0,0,0,0.5);
@@ -70,6 +78,8 @@
     --bg:#14171A; --surface:#1D2126; --surface-raised:#242830; --ink:#E8E6DF; --ink-soft:#9BA1A6; --ink-faint:#6E7378;
     --line:#33383D; --line-soft:#2A2F34; --accent:#8FADD1; --accent-strong:#AEC4E2; --accent-soft:rgba(143,173,209,0.16);
     --accent-ink:#151A20; --success:#6FBF97; --success-soft:rgba(111,191,151,0.16); --danger:#E68383; --danger-soft:rgba(230,131,131,0.18);
+    --yellow:#E8CB5C; --yellow-soft:rgba(232,203,92,0.18);
+    --blue:#7FAEDD; --blue-soft:rgba(127,174,221,0.18);
     --shadow-card:0 1px 2px rgba(0,0,0,0.3); --shadow-card-hover:0 8px 20px rgba(0,0,0,0.4); --shadow-panel:-8px 0 32px rgba(0,0,0,0.5);
     --col-compras:#1B1E22; --col-demanda-inicial:#221E17; --col-engenharia:#1C1C26; --col-demanda-final:#16201D; --col-concluido:#171F19;
     --col-compras-accent:#7C8790; --col-demanda-inicial-accent:#C9A05F; --col-engenharia-accent:#8B7EC0; --col-demanda-final-accent:#5CB39D; --col-concluido-accent:#6FBF97;
@@ -79,6 +89,8 @@
     --bg:#E6E4DC; --surface:#FBFAF7; --surface-raised:#FFFFFF; --ink:#20242A; --ink-soft:#5C6169; --ink-faint:#8A8E93;
     --line:#D6D2C6; --line-soft:#DEDBD0; --accent:#2C4A70; --accent-strong:#1F3654; --accent-soft:rgba(44,74,112,0.12);
     --accent-ink:#FFFFFF; --success:#3F7A5C; --success-soft:rgba(63,122,92,0.14); --danger:#B23B3B; --danger-soft:rgba(178,59,59,0.14);
+    --yellow:#9C7A0A; --yellow-soft:rgba(156,122,10,0.16);
+    --blue:#2E6DA4; --blue-soft:rgba(46,109,164,0.14);
     --shadow-card:0 1px 2px rgba(32,36,42,0.06), 0 1px 1px rgba(32,36,42,0.04); --shadow-card-hover:0 6px 16px rgba(32,36,42,0.12), 0 2px 4px rgba(32,36,42,0.06);
     --shadow-panel:-8px 0 32px rgba(20,22,26,0.18);
     --col-compras:#E6E4DC; --col-demanda-inicial:#EFE6D3; --col-engenharia:#E3E3ED; --col-demanda-final:#DEE9E6; --col-concluido:#DEEBDF;
@@ -296,6 +308,12 @@
 
   .eng-flags-toggle{display:flex;gap:10px;flex-wrap:wrap;padding-left:52px;}
 
+  .final-status-dot{width:16px;height:16px;border-radius:50%;flex:none;}
+  .final-status-dot.red{background:var(--danger);}
+  .final-status-dot.yellow{background:var(--yellow);}
+  .final-status-dot.blue{background:var(--blue);}
+  .final-status-dot.green{background:var(--success);}
+
   /* ---------- Overlay + Panel ---------- */
   .overlay{
     position:fixed;inset:0;background:rgba(10,12,14,0.42);
@@ -342,6 +360,8 @@
   }
   .section-label .badge.ok{background:var(--success-soft);color:var(--success);}
   .section-label .badge.pending{background:var(--danger-soft);color:var(--danger);}
+  .section-label .badge.caution{background:var(--yellow-soft);color:var(--yellow);}
+  .section-label .badge.info{background:var(--blue-soft);color:var(--blue);}
 
   .field{margin-bottom:12px;}
   .field label{display:block;font-size:11.5px;font-weight:600;color:var(--ink-soft);margin-bottom:5px;}
@@ -354,7 +374,7 @@
   .field input:focus, .field select:focus, .field textarea:focus{
     outline:2px solid var(--accent);outline-offset:0;border-color:transparent;
   }
-  .field .hint{font-size:11px;color:var(--ink-faint);margin-top:4px;}
+  .hint{font-size:11px;color:var(--ink-faint);margin-top:4px;}
 
   .file-field{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
   .file-field input[type="file"]{display:none;}
@@ -376,25 +396,20 @@
 
   .detail-text{font-size:12.5px;color:var(--ink-soft);white-space:pre-wrap;}
 
-  .ref-action-row{
-    display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--line-soft);
-  }
-  .ref-action-row:last-child{border-bottom:none;}
-  .ref-action-row .ref-tag{
-    font-size:11.5px;font-weight:700;color:var(--ink);background:var(--bg);
-    border-radius:6px;padding:3px 7px;flex:none;min-width:44px;text-align:center;
-  }
-  .ref-action-row select{
-    flex:1;font-size:12.5px;padding:6px 8px;border-radius:7px;border:1px solid var(--line);
-    background:var(--surface-raised);color:var(--ink);
-  }
-  .ref-action-row .readonly-action{
-    flex:1;font-size:12.5px;color:var(--ink-soft);
-  }
-
   .ref-action-block{padding:8px 0;border-bottom:1px dashed var(--line-soft);}
   .ref-action-block:last-child{border-bottom:none;}
   .ref-action-block .action-row{display:flex;align-items:center;gap:8px;margin-bottom:7px;}
+  .ref-action-block .action-row .ref-tag{
+    font-size:11.5px;font-weight:700;color:var(--ink);background:var(--bg);
+    border-radius:6px;padding:3px 7px;flex:none;min-width:44px;text-align:center;
+  }
+  .ref-action-block .action-row select{
+    flex:1;font-size:12.5px;padding:6px 8px;border-radius:7px;border:1px solid var(--line);
+    background:var(--surface-raised);color:var(--ink);
+  }
+  .ref-action-block .readonly-action{
+    flex:1;font-size:12.5px;color:var(--ink-soft);
+  }
   .ref-action-block .depara-row{display:flex;align-items:center;gap:8px;padding-left:52px;flex-wrap:wrap;}
   .depara-label{font-size:11px;font-weight:600;color:var(--ink-faint);white-space:nowrap;}
   .depara-input{
@@ -408,6 +423,13 @@
   }
   .check-label input{width:15px;height:15px;accent-color:var(--success);cursor:pointer;}
   .check-label.disabled{opacity:0.45;cursor:not-allowed;}
+
+  .final-obs-textarea{
+    width:100%;font-family:inherit;font-size:12.5px;color:var(--ink);
+    background:var(--surface-raised);border:1px solid var(--line);border-radius:8px;
+    padding:7px 9px;margin-top:7px;resize:vertical;min-height:50px;
+  }
+  .final-obs-textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent;}
 
   .move-grid{display:flex;flex-wrap:wrap;gap:8px;}
   .move-btn{
@@ -523,6 +545,13 @@
       else ENG_FLAGS.forEach(function(f){ if (card.engFlags[r][f.key] === undefined) card.engFlags[r][f.key] = false; });
     });
   }
+  function ensureFinalActions(card){
+    if (!card.actionsFinal || typeof card.actionsFinal !== "object") card.actionsFinal = {};
+    card.references.forEach(function(r){
+      if (!card.actionsFinal[r]) card.actionsFinal[r] = { action:null, finalized:false, observacao:"" };
+      else if (card.actionsFinal[r].observacao === undefined) card.actionsFinal[r].observacao = "";
+    });
+  }
 
   function brandOf(name){
     for (var i=0;i<BRANDS.length;i++){ if (BRANDS[i].name === name) return BRANDS[i]; }
@@ -568,7 +597,7 @@
     function mkActionMap(refs, options){
       var m = {};
       refs.forEach(function(r){
-        if (options && options.finalized!==undefined){ m[r] = { action:null, done:false, finalized:false }; }
+        if (options && options.finalized!==undefined){ m[r] = { action:null, done:false, finalized:false, observacao:"" }; }
         else { m[r] = { action:null, done:false, deNumber:null, paraNumber:null, padrao:false }; }
       });
       return m;
@@ -608,8 +637,17 @@
         details:"Nova referência de estampa aprovada pelo estilo.",
         column:"demanda_final", createdDaysAgo:8, enteredDaysAgo:1,
         actionsInitial:{ "1500":{action:"Trocar alternativa",done:true}, "1501":{action:"Trocar alternativa",done:true}, "1502":{action:"Criar alternativa",done:true} },
-        actionsFinal:{ "1500":{action:"Atualizar OP",finalized:true}, "1501":{action:"Dividir OP",finalized:false}, "1502":{action:null,finalized:false} },
+        actionsFinal:{ "1500":{action:"Atualizar OP",finalized:true,observacao:"OP 4521 atualizada com a nova referência de estampa aprovada."}, "1501":{action:"Dividir OP",finalized:false,observacao:"Aguardando definição da quantidade para a divisão da OP."}, "1502":{action:null,finalized:false,observacao:""} },
         engFlags:{ "1500":{encaixe:true,sequencia:true,ficha:true}, "1501":{encaixe:true,sequencia:true,ficha:true}, "1502":{encaixe:true,sequencia:true,ficha:true} }
+      },
+      { brand:"Momi Bebe", references:["700","701"],
+        originalFabric:"Body manga longa algodão liso",
+        substituteFabric:"Body manga longa algodão canelado",
+        details:"Ajuste de textura solicitado pelo estilo para a coleção de inverno.",
+        column:"demanda_final", createdDaysAgo:5, enteredDaysAgo:2,
+        actionsInitial:{ "700":{action:"Trocar alternativa",done:true}, "701":{action:"Trocar alternativa",done:true} },
+        actionsFinal:{ "700":{action:"Atualizar OP",finalized:false,observacao:"OP 5210 revisada, aguardando aprovação final para marcar como concluída."}, "701":{action:"Atualizar OP",finalized:false,observacao:"Confirmado com o PCP, falta apenas o de-acordo do setor de qualidade."} },
+        engFlags:{ "700":{encaixe:true,sequencia:true,ficha:true}, "701":{encaixe:true,sequencia:true,ficha:true} }
       },
       { brand:"Anime Bebe", references:["900"],
         originalFabric:"Moletom flanelado verde musgo",
@@ -617,7 +655,7 @@
         details:"Troca concluída e homologada.",
         column:"concluido", createdDaysAgo:10, enteredDaysAgo:0,
         actionsInitial:{ "900":{action:"Trocar alternativa",done:true} },
-        actionsFinal:{ "900":{action:"Atualizar OP",finalized:true} },
+        actionsFinal:{ "900":{action:"Atualizar OP",finalized:true,observacao:"OP atualizada e homologada com o novo moletom."} },
         engFlags:{ "900":{encaixe:true,sequencia:true,ficha:true} }
       },
       { brand:"Momi", references:["1201","1202"],
@@ -637,7 +675,8 @@
         if (actionsInitial[r].deNumber === undefined) actionsInitial[r].deNumber = null;
         if (actionsInitial[r].paraNumber === undefined) actionsInitial[r].paraNumber = null;
         if (actionsInitial[r].padrao === undefined) actionsInitial[r].padrao = false;
-        if(!actionsFinal[r]) actionsFinal[r] = {action:null, finalized:false};
+        if(!actionsFinal[r]) actionsFinal[r] = {action:null, finalized:false, observacao:""};
+        if (actionsFinal[r].observacao === undefined) actionsFinal[r].observacao = "";
         if(!engFlags[r]) engFlags[r] = defaultEngFlags();
       });
       return {
@@ -664,6 +703,7 @@
         var parsed = JSON.parse(raw);
         if (parsed && Array.isArray(parsed.cards)){
           parsed.cards.forEach(ensureEngFlags);
+          parsed.cards.forEach(ensureFinalActions);
           state = parsed;
           return;
         }
@@ -705,9 +745,27 @@
       return f && ENG_FLAGS.every(function(flag){ return !!f[flag.key]; });
     });
   }
-  function finalComplete(card){
-    return card.references.every(function(r){ return card.actionsFinal[r] && card.actionsFinal[r].action && card.actionsFinal[r].finalized; });
+  function finalRefActionObsComplete(card, r){
+    var f = card.actionsFinal[r];
+    return !!(f && f.action && f.observacao && f.observacao.trim());
   }
+  function finalActionObsComplete(card){
+    return card.references.every(function(r){ return finalRefActionObsComplete(card, r); });
+  }
+  function finalComplete(card){
+    return card.references.every(function(r){ return finalRefActionObsComplete(card, r) && card.actionsFinal[r].finalized; });
+  }
+  function finalStatus(card){
+    if (finalComplete(card)) return "green";
+    if (finalActionObsComplete(card)) return "blue";
+    var anyStarted = card.references.some(function(r){
+      var f = card.actionsFinal[r];
+      return !!(f && (f.action || (f.observacao && f.observacao.trim())));
+    });
+    return anyStarted ? "yellow" : "red";
+  }
+  var FINAL_STATUS_LABEL = { red:"Pendente", yellow:"Em andamento", blue:"Falta finalizar", green:"Concluído" };
+  var FINAL_STATUS_BADGE_CLASS = { red:"pending", yellow:"caution", blue:"info", green:"ok" };
   function validateMove(card, dest){
     if (dest === card.column) return { ok:true };
     if (dest === "engenharia" && !initialComplete(card)){
@@ -717,7 +775,7 @@
       return { ok:false, reason:"Todas as ações de Engenharia precisam estar marcadas como Concluídas antes de mover para Demanda (Final)." };
     }
     if (dest === "concluido" && !finalComplete(card)){
-      return { ok:false, reason:"Defina e finalize a ação de todas as referências na Demanda (Final) antes de concluir o cartão." };
+      return { ok:false, reason:"Preencha ação e observação de todas as referências e marque-as como Finalizada na Demanda (Final) antes de concluir o cartão." };
     }
     return { ok:true };
   }
@@ -803,6 +861,11 @@
         '</span>'
       : "";
 
+    var showFinalStatus = ci >= colIndex("demanda_final");
+    var finalStatusHtml = showFinalStatus
+      ? '<span class="final-status-dot ' + finalStatus(card) + '" title="Demanda (Final): ' + FINAL_STATUS_LABEL[finalStatus(card)] + '"></span>'
+      : "";
+
     return (
       '<div class="card" draggable="true" data-id="' + card.id + '" tabindex="0" role="button" ' +
         'aria-label="' + esc(card.originalFabric) + ', ' + esc(brand.name) + '" style="--brand-color:' + brand.bg + '">' +
@@ -826,6 +889,7 @@
           '<span class="time-badge">' + ICON_CLOCK + totalDays + 'd total</span>' +
           '<span class="time-badge' + (late ? ' late' : '') + '">' + ICON_CLOCK + colDays + 'd na etapa</span>' +
           engFlagsHtml +
+          finalStatusHtml +
           '<span class="stage-dots">' + dots + '</span>' +
         '</div>' +
       '</div>'
@@ -1016,7 +1080,7 @@
       var actionsInitial = {}, actionsFinal = {};
       uniqueRefs.forEach(function(r){
         actionsInitial[r] = { action:null, done:false, deNumber:null, paraNumber:null, padrao:false };
-        actionsFinal[r] = { action:null, finalized:false };
+        actionsFinal[r] = { action:null, finalized:false, observacao:"" };
       });
 
       var now = Date.now();
@@ -1134,22 +1198,31 @@
           }).join("") +
         '</div>';
     } else if (card.column === "demanda_final"){
+      var cardStatus = finalStatus(card);
       actionsSectionHtml =
         '<div class="panel-section">' +
-          '<div class="section-label">Ações — Demanda (Final) <span class="badge ' + (finalOk?'ok':'pending') + '">' + finalDoneCount + '/' + card.references.length + ' finalizadas</span></div>' +
+          '<div class="section-label">Ações — Demanda (Final) ' +
+            '<span class="badge ' + FINAL_STATUS_BADGE_CLASS[cardStatus] + '">' + FINAL_STATUS_LABEL[cardStatus] + '</span>' +
+            '<span class="badge ' + (finalOk?'ok':'pending') + '">' + finalDoneCount + '/' + card.references.length + ' finalizadas</span>' +
+          '</div>' +
           card.references.map(function(r){
             var f = card.actionsFinal[r];
             var cur = f.action || "";
+            var canFinalize = finalRefActionObsComplete(card, r);
             return (
-              '<div class="ref-action-row">' +
-                '<span class="ref-tag mono">' + esc(r) + '</span>' +
-                '<select data-ref="' + esc(r) + '" class="finalActionSelect">' +
-                  '<option value="" ' + (cur===""?"selected":"") + ' disabled>Selecionar ação…</option>' +
-                  FINAL_ACTIONS.map(function(a){ return '<option value="' + esc(a) + '" ' + (cur===a?"selected":"") + '>' + esc(a) + '</option>'; }).join("") +
-                '</select>' +
-                '<label class="check-label' + (!f.action?' disabled':'') + '">' +
-                  '<input type="checkbox" class="finalDoneCheck" data-ref="' + esc(r) + '" ' + (f.finalized?"checked":"") + (!f.action?" disabled":"") + '> Finalizada' +
-                '</label>' +
+              '<div class="ref-action-block">' +
+                '<div class="action-row">' +
+                  '<span class="ref-tag mono">' + esc(r) + '</span>' +
+                  '<select data-ref="' + esc(r) + '" class="finalActionSelect">' +
+                    '<option value="" ' + (cur===""?"selected":"") + ' disabled>Selecionar ação…</option>' +
+                    FINAL_ACTIONS.map(function(a){ return '<option value="' + esc(a) + '" ' + (cur===a?"selected":"") + '>' + esc(a) + '</option>'; }).join("") +
+                  '</select>' +
+                  '<label class="check-label' + (!canFinalize?' disabled':'') + '">' +
+                    '<input type="checkbox" class="finalDoneCheck" data-ref="' + esc(r) + '" ' + (f.finalized?"checked":"") + (!canFinalize?" disabled":"") + '> Finalizada' +
+                  '</label>' +
+                '</div>' +
+                '<textarea class="final-obs-input" data-ref="' + esc(r) + '" placeholder="Observação — detalhe a ação para esta referência…">' + esc(f.observacao || "") + '</textarea>' +
+                (!canFinalize ? '<div class="hint">Preencha ação e observação para poder marcar como Finalizada.</div>' : '') +
               '</div>'
             );
           }).join("") +
@@ -1264,6 +1337,15 @@
       chk.addEventListener("change", function(){
         var ref = chk.getAttribute("data-ref");
         card.actionsFinal[ref].finalized = chk.checked;
+        save();
+        renderAll();
+        renderPanel();
+      });
+    });
+    panelEl.querySelectorAll(".final-obs-input").forEach(function(ta){
+      ta.addEventListener("change", function(){
+        var ref = ta.getAttribute("data-ref");
+        card.actionsFinal[ref].observacao = ta.value;
         save();
         renderAll();
         renderPanel();
