@@ -1,4 +1,4 @@
-<title>Fluxo Têxtil — Substituição de Tecidos e Aviamentos</title>
+<title>Fluxo de Substituição de Insumos</title>
 <style>
   :root{
     --bg:#E6E4DC;
@@ -194,6 +194,15 @@
     background:var(--surface);border:1px solid var(--line);
     border-radius:999px;padding:1px 8px;margin-left:auto;margin-top:2px;
   }
+  .column-filter-row{padding:8px 14px 0;}
+  .brand-filter-select{
+    width:100%;font-family:inherit;font-size:11.5px;font-weight:600;color:var(--ink-soft);
+    background:var(--surface);border:1px solid var(--line);border-radius:7px;
+    padding:5px 8px;cursor:pointer;
+  }
+  .brand-filter-select:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent;}
+  .brand-filter-select:disabled{opacity:0.5;cursor:not-allowed;}
+
   .new-request-btn{
     display:flex;align-items:center;gap:6px;
     background:var(--accent);color:var(--accent-ink);border:none;border-radius:8px;
@@ -479,7 +488,7 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5c2.5 2.6 2.5 14.4 0 17M12 3.5c-2.5 2.6-2.5 14.4 0 17M4 9.5h16M4 14.5h16"/></svg>
     </div>
     <div>
-      <h1>Fluxo Têxtil</h1>
+      <h1>Fluxo de Substituição de Insumos</h1>
       <div class="subtitle">Substituição de tecidos e aviamentos — Compras → Demanda → Engenharia → Conclusão</div>
     </div>
     <div class="topbar-spacer"></div>
@@ -496,11 +505,51 @@
 <aside class="panel" id="panel" role="dialog" aria-modal="true" aria-labelledby="panel-title"></aside>
 <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 (function(){
   "use strict";
 
   var STORAGE_KEY = "texfluxo_kanban_v1";
+
+  /* ---------- Notificação por e-mail ao mudar de estágio ---------- */
+  // TODO: preencher com as chaves da sua conta em https://dashboard.emailjs.com/
+  var EMAILJS_PUBLIC_KEY = "COLOQUE_SUA_PUBLIC_KEY_AQUI";
+  var EMAILJS_SERVICE_ID = "COLOQUE_SEU_SERVICE_ID_AQUI";
+  var EMAILJS_TEMPLATE_ID = "COLOQUE_SEU_TEMPLATE_ID_AQUI";
+
+  var STAGE_NOTIFY_EMAIL = {
+    demanda_inicial: "franciele.b@texcotton.com.br",
+    engenharia: "simoni.g@texcotton.com.br",
+    demanda_final: "amanda.g@texcotton.com.br",
+    concluido: "eduardo@texcotton.com.br"
+  };
+
+  if (window.emailjs && EMAILJS_PUBLIC_KEY.indexOf("COLOQUE_") !== 0){
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+  }
+
+  function notifyStageMove(card, fromStage, toStage){
+    var toEmail = STAGE_NOTIFY_EMAIL[toStage];
+    if (!toEmail) return;
+    if (!window.emailjs || EMAILJS_PUBLIC_KEY.indexOf("COLOQUE_") === 0){
+      console.warn("Notificação de e-mail não enviada: configure EMAILJS_PUBLIC_KEY/SERVICE_ID/TEMPLATE_ID em index.html.");
+      return;
+    }
+    var params = {
+      to_email: toEmail,
+      card_brand: card.brand || "",
+      card_references: (card.references || []).join(", "),
+      original_fabric: card.originalFabric || "",
+      substitute_fabric: card.substituteFabric || "",
+      from_stage: colLabel(fromStage),
+      to_stage: colLabel(toStage)
+    };
+    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, params).catch(function(err){
+      console.error("Falha ao enviar notificação de e-mail:", err);
+      toast("Cartão movido, mas a notificação por e-mail falhou.", "error");
+    });
+  }
   var DAY_MS = 86400000;
 
   var COLUMNS = [
@@ -590,6 +639,7 @@
 
   /* ---------- State ---------- */
   var state = { cards: [] };
+  var columnBrandFilter = {};
 
   function seedCards(){
     var now = Date.now();
@@ -788,12 +838,14 @@
       toast(v.reason, "error");
       return;
     }
+    var fromStage = card.column;
     card.column = dest;
     card.enteredColumnAt = Date.now();
     save();
     renderAll();
     if (panelCardId === cardId) renderPanel();
     toast("Cartão movido para " + colLabel(dest) + ".", "success");
+    notifyStageMove(card, fromStage, dest);
   }
 
   /* ---------- Toasts ---------- */
@@ -900,15 +952,27 @@
     renderStats();
     var board = document.getElementById("board");
     board.innerHTML = COLUMNS.map(function(col){
-      var cards = state.cards.filter(function(c){ return c.column === col.id; });
+      var allCards = state.cards.filter(function(c){ return c.column === col.id; });
+      var brandsInColumn = allCards.map(function(c){ return c.brand; }).filter(function(b,i,arr){ return arr.indexOf(b) === i; }).sort();
+      if (columnBrandFilter[col.id] && brandsInColumn.indexOf(columnBrandFilter[col.id]) === -1){
+        columnBrandFilter[col.id] = null;
+      }
+      var activeBrand = columnBrandFilter[col.id] || "";
+      var cards = activeBrand ? allCards.filter(function(c){ return c.brand === activeBrand; }) : allCards;
       var cardsHtml = cards.length
         ? cards.map(renderCard).join("")
-        : '<div class="empty-hint">Nenhum cartão nesta etapa</div>';
+        : '<div class="empty-hint">' + (activeBrand ? "Nenhum cartão desta marca nesta etapa" : "Nenhum cartão nesta etapa") + '</div>';
       return (
         '<section class="column" style="--col-bg:var(--col-' + col.id.replace(/_/g,'-') + ');--col-accent:var(--col-' + col.id.replace(/_/g,'-') + '-accent)">' +
           '<div class="column-head">' +
             '<span class="column-title">' + esc(col.label) + '</span>' +
-            '<span class="column-count">' + cards.length + '</span>' +
+            '<span class="column-count"' + (activeBrand ? ' title="' + cards.length + ' de ' + allCards.length + ' cartões"' : '') + '>' + cards.length + '</span>' +
+          '</div>' +
+          '<div class="column-filter-row">' +
+            '<select class="brand-filter-select" data-col="' + col.id + '"' + (brandsInColumn.length ? '' : ' disabled') + '>' +
+              '<option value="">Todas as marcas</option>' +
+              brandsInColumn.map(function(b){ return '<option value="' + esc(b) + '" ' + (activeBrand===b?"selected":"") + '>' + esc(b) + '</option>'; }).join("") +
+            '</select>' +
           '</div>' +
           (col.id === "compras"
             ? '<button class="new-request-btn" id="btnNewRequest">' + ICON_PLUS + 'Nova Solicitação</button>'
@@ -926,6 +990,13 @@
   function bindBoardEvents(){
     var btn = document.getElementById("btnNewRequest");
     if (btn) btn.addEventListener("click", openCreatePanel);
+
+    document.querySelectorAll(".brand-filter-select").forEach(function(sel){
+      sel.addEventListener("change", function(){
+        columnBrandFilter[sel.getAttribute("data-col")] = sel.value || null;
+        renderAll();
+      });
+    });
 
     document.querySelectorAll(".card").forEach(function(el){
       el.addEventListener("click", function(){ openCardPanel(el.getAttribute("data-id")); });
