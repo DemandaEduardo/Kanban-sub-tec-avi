@@ -510,7 +510,7 @@
 (function(){
   "use strict";
 
-  var STORAGE_KEY = "texfluxo_kanban_v1";
+  var SYNC_INTERVAL_MS = 4000;
 
   /* ---------- Notificação por e-mail ao mudar de estágio ---------- */
   // TODO: preencher com as chaves da sua conta em https://dashboard.emailjs.com/
@@ -640,6 +640,7 @@
   /* ---------- State ---------- */
   var state = { cards: [] };
   var columnBrandFilter = {};
+  var lastSyncedJson = null;
 
   function seedCards(){
     var now = Date.now();
@@ -746,24 +747,62 @@
     });
   }
 
+  function applyRemoteState(parsed){
+    parsed.cards.forEach(ensureEngFlags);
+    parsed.cards.forEach(ensureFinalActions);
+    state = parsed;
+  }
   function load(){
-    try{
-      var raw = localStorage.getItem(STORAGE_KEY);
-      if (raw){
-        var parsed = JSON.parse(raw);
-        if (parsed && Array.isArray(parsed.cards)){
-          parsed.cards.forEach(ensureEngFlags);
-          parsed.cards.forEach(ensureFinalActions);
-          state = parsed;
-          return;
-        }
+    return fetch("/api/state").then(function(res){
+      if (!res.ok) throw new Error("bad status");
+      return res.json();
+    }).then(function(parsed){
+      if (parsed && Array.isArray(parsed.cards)){
+        applyRemoteState(parsed);
+        lastSyncedJson = JSON.stringify(state);
+        return;
       }
-    }catch(e){}
-    state = { cards: seedCards() };
-    save();
+      // Servidor ainda não tem dados: popular com exemplos e gravar.
+      state = { cards: seedCards() };
+      return save();
+    }).catch(function(){
+      // Falha de rede: não sobrescrever os dados do servidor, só exibir exemplos offline.
+      state = { cards: seedCards() };
+      toast("Não foi possível conectar ao servidor. Exibindo dados de exemplo offline.", "error");
+    });
   }
   function save(){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); return true; }catch(e){ return false; }
+    var payload = JSON.stringify(state);
+    return fetch("/api/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload
+    }).then(function(res){
+      if (!res.ok) throw new Error("bad status");
+      lastSyncedJson = payload;
+      return true;
+    }).catch(function(){
+      toast("Falha ao sincronizar com o servidor. Verifique a conexão.", "error");
+      return false;
+    });
+  }
+  function pollSync(){
+    fetch("/api/state").then(function(res){
+      if (!res.ok) throw new Error("bad status");
+      return res.text();
+    }).then(function(text){
+      if (text === lastSyncedJson) return;
+      var parsed;
+      try{ parsed = JSON.parse(text); }catch(e){ return; }
+      if (!parsed || !Array.isArray(parsed.cards)) return;
+      applyRemoteState(parsed);
+      lastSyncedJson = text;
+      renderAll();
+      if (panelCardId){
+        if (state.cards.some(function(c){ return c.id === panelCardId; })) renderPanel();
+        else closePanel();
+      }
+    }).catch(function(){ /* falha de rede intermitente: ignora, tenta de novo no próximo ciclo */ });
   }
   function downscaleImage(file, maxDim, quality, onDone, onError){
     var reader = new FileReader();
@@ -1170,9 +1209,7 @@
         actionsFinal: actionsFinal,
         engFlags: buildEngFlags(uniqueRefs)
       });
-      if (!save()){
-        toast("Solicitação criada, mas o armazenamento local está cheio — considere anexar uma imagem menor.", "error");
-      }
+      save();
       renderAll();
       closePanel();
       toast("Solicitação de " + originalFabric + " criada em Compras.", "success");
@@ -1440,8 +1477,8 @@
   }
 
   /* ---------- Init ---------- */
-  load();
-  renderAll();
+  load().then(renderAll);
   setInterval(function(){ renderAll(); if (panelCardId) renderPanel(); }, 60000);
+  setInterval(pollSync, SYNC_INTERVAL_MS);
 })();
 </script>
