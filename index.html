@@ -475,14 +475,15 @@
   }
   .divisao-add svg{width:12px;height:12px;display:block;}
 
-  .move-grid{display:flex;flex-wrap:wrap;gap:8px;}
   .move-btn{
     font-size:11.5px;font-weight:600;padding:7px 11px;border-radius:8px;cursor:pointer;
     background:var(--surface-raised);border:1px solid var(--line);color:var(--ink);
   }
   .move-btn:hover{border-color:var(--accent);}
-  .move-btn.current{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);cursor:default;}
-  .move-btn.blocked{color:var(--ink-faint);}
+
+  .request-no{
+    font-size:10.5px;font-weight:700;color:var(--ink-faint);letter-spacing:0.02em;
+  }
 
   .danger-link{
     background:none;border:none;color:var(--danger);font-size:12px;font-weight:600;cursor:pointer;padding:6px 0;
@@ -654,6 +655,78 @@
       '</div>'
     );
   }
+  function renderInitialHistorySection(card, initialOk, initialDoneCount){
+    return (
+      '<div class="panel-section">' +
+        '<div class="section-label">Histórico — Demanda (Inicial) <span class="badge ' + (initialOk?'ok':'pending') + '">' + initialDoneCount + '/' + card.references.length + ' definidas</span></div>' +
+        card.references.map(function(r){
+          var a = card.actionsInitial[r];
+          return (
+            '<div class="ref-action-block">' +
+              '<div class="action-row">' +
+                '<span class="ref-tag mono">' + esc(r) + '</span>' +
+                '<span class="readonly-action">' + (a.action ? esc(formatInitialAction(a)) : '<em>Sem ação definida</em>') + '</span>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join("") +
+      '</div>'
+    );
+  }
+  function renderEngenhariaHistorySection(card, engFlagsByRef, engOk, engFlagsDone, engFlagsTotal){
+    return (
+      '<div class="panel-section">' +
+        '<div class="section-label">Histórico — Engenharia <span class="badge ' + (engOk?'ok':'pending') + '">' + engFlagsDone + '/' + engFlagsTotal + ' concluídas</span></div>' +
+        card.references.map(function(r){
+          var f = engFlagsByRef[r] || defaultEngFlags();
+          return (
+            '<div class="ref-action-block">' +
+              '<div class="action-row">' +
+                '<span class="ref-tag mono">' + esc(r) + '</span>' +
+                '<span class="readonly-action">' +
+                  ENG_FLAGS.map(function(flag){ return (f[flag.key] ? '✓' : '—') + ' ' + esc(flag.label); }).join(' · ') +
+                '</span>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join("") +
+      '</div>'
+    );
+  }
+  function renderDivisoesHistoryList(divisoes){
+    return (
+      '<div class="detail-text">' +
+        divisoes.map(function(d, i){
+          return (i+1) + 'ª divisão — Alternativa: ' + esc(d.alternativa || '—') + ', Qtd: ' + esc(d.quantidade || '—') + ', Nº OP: ' + esc(d.numeroOp || '—');
+        }).join('<br>') +
+      '</div>'
+    );
+  }
+  function renderFinalHistorySection(card, finalOk, finalDoneCount){
+    var cardStatus = finalStatus(card);
+    return (
+      '<div class="panel-section">' +
+        '<div class="section-label">Histórico — Demanda (Final) ' +
+          '<span class="badge ' + FINAL_STATUS_BADGE_CLASS[cardStatus] + '">' + FINAL_STATUS_LABEL[cardStatus] + '</span>' +
+          '<span class="badge ' + (finalOk?'ok':'pending') + '">' + finalDoneCount + '/' + card.references.length + ' finalizadas</span>' +
+        '</div>' +
+        card.references.map(function(r){
+          var f = card.actionsFinal[r];
+          return (
+            '<div class="ref-action-block">' +
+              '<div class="action-row">' +
+                '<span class="ref-tag mono">' + esc(r) + '</span>' +
+                '<span class="readonly-action">' + (f.action ? esc(f.action) : '<em>Sem ação definida</em>') + '</span>' +
+                (f.finalized ? '<span class="badge ok">Finalizada</span>' : '') +
+              '</div>' +
+              (f.observacao ? '<div class="detail-text">' + esc(f.observacao) + '</div>' : '') +
+              (f.action === "Dividir OP" && (f.divisoes||[]).length ? renderDivisoesHistoryList(f.divisoes) : '') +
+            '</div>'
+          );
+        }).join("") +
+      '</div>'
+    );
+  }
   function ensureFinalActions(card){
     if (!card.actionsFinal || typeof card.actionsFinal !== "object") card.actionsFinal = {};
     card.references.forEach(function(r){
@@ -682,6 +755,26 @@
   }
   function uid(){
     return "c" + Math.random().toString(36).slice(2,10) + Date.now().toString(36);
+  }
+  function maxRequestSeq(cards){
+    var max = 0;
+    cards.forEach(function(c){
+      var m = /^RQ(\d+)$/.exec(c.requestNumber || "");
+      if (m) max = Math.max(max, Number(m[1]));
+    });
+    return max;
+  }
+  function nextRequestNumber(){
+    return "RQ" + String(maxRequestSeq(state.cards) + 1).padStart(4, "0");
+  }
+  function ensureRequestNumbers(cards){
+    var seq = maxRequestSeq(cards);
+    cards.filter(function(c){ return !c.requestNumber; })
+      .sort(function(a,b){ return a.createdAt - b.createdAt; })
+      .forEach(function(c){
+        seq++;
+        c.requestNumber = "RQ" + String(seq).padStart(4, "0");
+      });
   }
   function esc(s){
     return String(s==null?"":s).replace(/[&<>"']/g, function(c){
@@ -730,7 +823,7 @@
 
   function cardMatchesSearch(card, q){
     if (!q) return true;
-    var fields = [card.originalFabric, card.substituteFabric, card.brand, card.details];
+    var fields = [card.requestNumber, card.originalFabric, card.substituteFabric, card.brand, card.details];
     fields = fields.concat(card.references || []);
     if (card.tecido){
       fields.push(ordinalDemanda(card.tecido.demanda), card.tecido.de, card.tecido.para, card.tecido.motivo, card.tecido.compra,
@@ -822,7 +915,7 @@
       }
     ];
 
-    return seeds.map(function(s){
+    return seeds.map(function(s, idx){
       var actionsInitial = s.actionsInitial || mkActionMap(s.references);
       var actionsFinal = s.actionsFinal || mkActionMap(s.references, {finalized:true});
       var engFlags = s.engFlags || {};
@@ -839,6 +932,7 @@
       });
       return {
         id: uid(),
+        requestNumber: "RQ" + String(idx + 1).padStart(4, "0"),
         originalFabric: s.originalFabric || "",
         substituteFabric: s.substituteFabric || "",
         brand: s.brand,
@@ -857,6 +951,7 @@
   function applyRemoteState(parsed){
     parsed.cards.forEach(ensureEngFlags);
     parsed.cards.forEach(ensureFinalActions);
+    ensureRequestNumbers(parsed.cards);
     state = parsed;
   }
   function load(){
@@ -1067,8 +1162,9 @@
 
     return (
       '<div class="card" draggable="true" data-id="' + card.id + '" tabindex="0" role="button" ' +
-        'aria-label="' + esc(card.originalFabric) + ', ' + esc(brand.name) + '" style="--brand-color:' + brand.bg + '">' +
+        'aria-label="' + esc(card.requestNumber || "") + ', ' + esc(card.originalFabric) + ', ' + esc(brand.name) + '" style="--brand-color:' + brand.bg + '">' +
         '<div class="card-row-top">' +
+          '<span class="request-no mono">' + esc(card.requestNumber || "") + '</span>' +
           '<span class="brand-chip" style="--brand-bg:' + brand.bg + ';--brand-fg:' + brand.fg + ';background:var(--brand-bg);color:var(--brand-fg);">' +
             '<span class="dot"></span>' + esc(brand.name) +
           '</span>' +
@@ -1445,6 +1541,7 @@
       var now = Date.now();
       state.cards.push({
         id: uid(),
+        requestNumber: nextRequestNumber(),
         tipo: tipo,
         originalFabric: originalFabric,
         substituteFabric: substituteFabric,
@@ -1498,9 +1595,11 @@
     var finalOk = finalComplete(card);
     var finalDoneCount = card.references.filter(function(r){ return card.actionsFinal[r] && card.actionsFinal[r].finalized; }).length;
 
+    var ci = colIndex(card.column);
     var actionsSectionHtml = "";
-    if (card.column === "demanda_inicial"){
-      actionsSectionHtml =
+
+    if (ci === colIndex("demanda_inicial")){
+      actionsSectionHtml +=
         '<div class="panel-section">' +
           '<div class="section-label">Ações — Demanda (Inicial) <span class="badge ' + (initialOk?'ok':'pending') + '">' + initialDoneCount + '/' + card.references.length + ' definidas</span></div>' +
           card.references.map(function(r){
@@ -1530,8 +1629,12 @@
             );
           }).join("") +
         '</div>';
-    } else if (card.column === "engenharia"){
-      actionsSectionHtml =
+    } else if (ci > colIndex("demanda_inicial")){
+      actionsSectionHtml += renderInitialHistorySection(card, initialOk, initialDoneCount);
+    }
+
+    if (ci === colIndex("engenharia")){
+      actionsSectionHtml +=
         '<div class="panel-section">' +
           '<div class="section-label">Ações — Engenharia <span class="badge ' + (engOk?'ok':'pending') + '">' + engFlagsDone + '/' + engFlagsTotal + ' concluídas</span></div>' +
           card.references.map(function(r){
@@ -1556,9 +1659,13 @@
             );
           }).join("") +
         '</div>';
-    } else if (card.column === "demanda_final"){
+    } else if (ci > colIndex("engenharia")){
+      actionsSectionHtml += renderEngenhariaHistorySection(card, engFlagsByRef, engOk, engFlagsDone, engFlagsTotal);
+    }
+
+    if (ci === colIndex("demanda_final")){
       var cardStatus = finalStatus(card);
-      actionsSectionHtml =
+      actionsSectionHtml +=
         '<div class="panel-section">' +
           '<div class="section-label">Ações — Demanda (Final) ' +
             '<span class="badge ' + FINAL_STATUS_BADGE_CLASS[cardStatus] + '">' + FINAL_STATUS_LABEL[cardStatus] + '</span>' +
@@ -1587,13 +1694,15 @@
             );
           }).join("") +
         '</div>';
+    } else if (ci > colIndex("demanda_final")){
+      actionsSectionHtml += renderFinalHistorySection(card, finalOk, finalDoneCount);
     }
 
     panelEl.innerHTML =
       '<div class="panel-head">' +
         '<div class="titles">' +
           '<div class="code" id="panel-title">' + esc(card.originalFabric) + '</div>' +
-          '<div class="meta">Criado em ' + fmtDate(card.createdAt) + ' · ' + totalDays + ' dias no total · ' + colDays + ' dias em ' + esc(colLabel(card.column)) + '</div>' +
+          '<div class="meta">' + esc(card.requestNumber || "") + ' · Criado em ' + fmtDate(card.createdAt) + ' · ' + totalDays + ' dias no total · ' + colDays + ' dias em ' + esc(colLabel(card.column)) + '</div>' +
         '</div>' +
         '<button class="icon-btn" id="btnClosePanel" aria-label="Fechar">' + ICON_CLOSE + '</button>' +
       '</div>' +
@@ -1622,17 +1731,6 @@
         '</div>' +
 
         actionsSectionHtml +
-
-        '<div class="panel-section">' +
-          '<div class="section-label">Mover cartão</div>' +
-          '<div class="move-grid">' +
-            COLUMNS.map(function(c){
-              var isCurrent = c.id === card.column;
-              var v = validateMove(card, c.id);
-              return '<button class="move-btn' + (isCurrent?' current':'') + (!isCurrent && !v.ok?' blocked':'') + '" data-dest="' + c.id + '"' + (isCurrent?' disabled':'') + '>' + esc(c.label) + '</button>';
-            }).join("") +
-          '</div>' +
-        '</div>' +
 
         '<div class="panel-section">' +
           '<div id="deleteWrap"><button class="danger-link" id="btnDeleteCard">Excluir solicitação</button></div>' +
@@ -1743,11 +1841,6 @@
         save();
         renderAll();
         renderPanel();
-      });
-    });
-    panelEl.querySelectorAll(".move-btn").forEach(function(btn){
-      btn.addEventListener("click", function(){
-        moveCard(card.id, btn.getAttribute("data-dest"));
       });
     });
     var deleteWrap = document.getElementById("deleteWrap");
