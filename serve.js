@@ -49,7 +49,7 @@ function saveState(req, res) {
   });
 }
 
-http.createServer((req, res) => {
+const server = http.createServer((req, res) => {
   const urlPath = decodeURIComponent(req.url.split("?")[0]);
 
   if (urlPath === "/api/state" && req.method === "GET") { serveState(res); return; }
@@ -63,6 +63,16 @@ http.createServer((req, res) => {
     res.writeHead(200, { "Content-Type": types[ext] || "application/octet-stream" });
     res.end(data);
   });
-}).listen(port, () => {
+});
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error("Porta " + port + " já está em uso — provavelmente o servidor já está rodando.");
+    process.exit(0);
+  }
+  throw err;
+});
+
+server.listen(port, () => {
   console.log("Serving " + root + " at http://localhost:" + port);
 });

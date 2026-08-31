@@ -144,6 +144,21 @@
   .topbar-spacer{flex:1;}
   .theme-note{font-size:11.5px;color:var(--ink-faint);}
 
+  .search-box{
+    position:relative;display:flex;align-items:center;
+    flex:0 1 300px;min-width:200px;
+  }
+  .search-box svg{
+    position:absolute;left:10px;width:14px;height:14px;color:var(--ink-faint);pointer-events:none;
+  }
+  .search-box input{
+    width:100%;font-family:inherit;font-size:12.5px;color:var(--ink);
+    background:var(--surface);border:1px solid var(--line);border-radius:8px;
+    padding:8px 10px 8px 30px;
+  }
+  .search-box input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent;}
+  .search-box input::placeholder{color:var(--ink-faint);}
+
   /* ---------- Stats strip ---------- */
   .stats{
     display:flex;gap:10px;padding:14px 28px;overflow-x:auto;
@@ -471,7 +486,8 @@
   @media (prefers-reduced-motion: reduce){.toast{transition:opacity .18s ease;}}
 
   @media (max-width:640px){
-    .topbar{padding:16px 16px 12px;}
+    .topbar{padding:16px 16px 12px;flex-wrap:wrap;}
+    .search-box{flex-basis:100%;order:3;margin-top:4px;}
     .board-wrap{padding:14px 14px 20px;}
     .stats{padding:12px 14px;}
     .panel{width:100vw;}
@@ -492,6 +508,10 @@
       <div class="subtitle">Substituição de tecidos e aviamentos — Compras → Demanda → Engenharia → Conclusão</div>
     </div>
     <div class="topbar-spacer"></div>
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input type="search" id="globalSearch" placeholder="Pesquisar código, referência, OP…" aria-label="Pesquisar solicitações em todas as etapas">
+    </div>
   </header>
 
   <div class="stats" id="stats"></div>
@@ -573,6 +593,7 @@
     { name:"Bimbi Menino", bg:"#4E7FAA", fg:"#FFFFFF" }
   ];
 
+  var LIBERACAO_SETORES = ["Compras", "Demanda", "Comercial", "Engenharia", "Desenvolvimento", "Qualidade", "Eng.Processos"];
   var INITIAL_ACTIONS = ["Trocar alternativa", "Criar alternativa"];
   var FINAL_ACTIONS = ["Dividir OP", "Atualizar OP", "Gerar nova OP"];
   var ENG_FLAGS = [
@@ -623,6 +644,23 @@
     });
   }
   function daysBetween(ts){ return Math.floor((Date.now() - ts) / DAY_MS); }
+  function simNao(v){ return v ? "Sim" : "Não"; }
+  function renderTecidoInfo(t){
+    return (
+      '<div class="field">' +
+        '<label>Detalhes da substituição de tecido</label>' +
+        '<div class="detail-text">' +
+          'Já Utilizado: ' + simNao(t.jaUtilizado) + '<br>' +
+          'Veio Corte Substituto: ' + simNao(t.veioCorteSubstituto) + '<br>' +
+          (t.compra ? 'COMPRA: ' + esc(t.compra) + '<br>' : '') +
+          (t.situacaoSubstituto ? 'Situação do Substituto: ' + esc(t.situacaoSubstituto) + '<br>' : '') +
+          (t.quantidadeMinima ? 'Quantidade mínima: ' + esc(t.quantidadeMinima) + '<br>' : '') +
+          'Liberação/Aprovação: ' + esc(t.liberacaoAprovacao || '—') + '<br>' +
+          'Separar no Estoque: ' + simNao(t.separarEstoque) +
+        '</div>' +
+      '</div>'
+    );
+  }
   function formatInitialAction(entry){
     if (!entry.action) return "";
     var parts = [entry.action];
@@ -640,7 +678,27 @@
   /* ---------- State ---------- */
   var state = { cards: [] };
   var columnBrandFilter = {};
+  var searchQuery = "";
   var lastSyncedJson = null;
+
+  function cardMatchesSearch(card, q){
+    if (!q) return true;
+    var fields = [card.originalFabric, card.substituteFabric, card.brand, card.details];
+    fields = fields.concat(card.references || []);
+    if (card.tecido){
+      fields.push(card.tecido.de, card.tecido.para, card.tecido.motivo, card.tecido.compra,
+        card.tecido.situacaoSubstituto, card.tecido.quantidadeMinima, card.tecido.liberacaoAprovacao);
+    }
+    (card.references || []).forEach(function(r){
+      var ai = card.actionsInitial && card.actionsInitial[r];
+      if (ai) fields.push(ai.action, ai.deNumber, ai.paraNumber);
+      var af = card.actionsFinal && card.actionsFinal[r];
+      if (af) fields.push(af.action, af.observacao);
+    });
+    return fields.some(function(v){
+      return v != null && String(v).toLowerCase().indexOf(q) !== -1;
+    });
+  }
 
   function seedCards(){
     var now = Date.now();
@@ -998,14 +1056,16 @@
       }
       var activeBrand = columnBrandFilter[col.id] || "";
       var cards = activeBrand ? allCards.filter(function(c){ return c.brand === activeBrand; }) : allCards;
+      var q = searchQuery;
+      if (q) cards = cards.filter(function(c){ return cardMatchesSearch(c, q); });
       var cardsHtml = cards.length
         ? cards.map(renderCard).join("")
-        : '<div class="empty-hint">' + (activeBrand ? "Nenhum cartão desta marca nesta etapa" : "Nenhum cartão nesta etapa") + '</div>';
+        : '<div class="empty-hint">' + (q ? "Nenhum resultado para a pesquisa nesta etapa" : (activeBrand ? "Nenhum cartão desta marca nesta etapa" : "Nenhum cartão nesta etapa")) + '</div>';
       return (
         '<section class="column" style="--col-bg:var(--col-' + col.id.replace(/_/g,'-') + ');--col-accent:var(--col-' + col.id.replace(/_/g,'-') + '-accent)">' +
           '<div class="column-head">' +
             '<span class="column-title">' + esc(col.label) + '</span>' +
-            '<span class="column-count"' + (activeBrand ? ' title="' + cards.length + ' de ' + allCards.length + ' cartões"' : '') + '>' + cards.length + '</span>' +
+            '<span class="column-count"' + ((activeBrand || q) ? ' title="' + cards.length + ' de ' + allCards.length + ' cartões"' : '') + '>' + cards.length + '</span>' +
           '</div>' +
           '<div class="column-filter-row">' +
             '<select class="brand-filter-select" data-col="' + col.id + '"' + (brandsInColumn.length ? '' : ' disabled') + '>' +
@@ -1114,13 +1174,32 @@
       '<div class="panel-body">' +
         '<form id="createForm">' +
           '<div class="field">' +
-            '<label for="fOriginal">Tecido/Aviamento Atual</label>' +
-            '<input type="text" id="fOriginal" placeholder="Ex: Malha viscose 180g/m² vermelha" required>' +
+            '<label>Tipo de Substituição</label>' +
+            '<div style="display:flex;gap:16px;padding-top:2px;">' +
+              '<label class="check-label"><input type="radio" name="fTipo" id="fTipoTecido" value="tecido" checked> Tecido</label>' +
+              '<label class="check-label"><input type="radio" name="fTipo" id="fTipoAviamento" value="aviamento"> Aviamento</label>' +
+            '</div>' +
           '</div>' +
-          '<div class="field">' +
-            '<label for="fSubstitute">Tecido/Aviamento Substituto</label>' +
-            '<input type="text" id="fSubstitute" placeholder="Ex: Malha viscose 180g/m² bordô" required>' +
-            '<div class="hint">Se ainda não houver um substituto definido, descreva a alternativa proposta.</div>' +
+          '<div id="tecidoDeParaFields">' +
+            '<div class="field">' +
+              '<label for="fTecidoDe">De (código do tecido)</label>' +
+              '<input type="text" id="fTecidoDe" placeholder="Código do tecido atual">' +
+            '</div>' +
+            '<div class="field">' +
+              '<label for="fTecidoPara">Para (código do tecido)</label>' +
+              '<input type="text" id="fTecidoPara" placeholder="Código do tecido substituto">' +
+            '</div>' +
+          '</div>' +
+          '<div id="aviamentoDeParaFields" style="display:none;">' +
+            '<div class="field">' +
+              '<label for="fOriginal">Aviamento Atual</label>' +
+              '<input type="text" id="fOriginal" placeholder="Ex: Elástico 12mm azul marinho">' +
+            '</div>' +
+            '<div class="field">' +
+              '<label for="fSubstitute">Aviamento Substituto</label>' +
+              '<input type="text" id="fSubstitute" placeholder="Ex: Elástico 12mm azul petróleo">' +
+              '<div class="hint">Se ainda não houver um substituto definido, descreva a alternativa proposta.</div>' +
+            '</div>' +
           '</div>' +
           '<div class="field">' +
             '<label for="fRefs">Referências afetadas</label>' +
@@ -1134,9 +1213,60 @@
               BRANDS.map(function(b){ return '<option value="' + esc(b.name) + '">' + esc(b.name) + '</option>'; }).join("") +
             '</select>' +
           '</div>' +
-          '<div class="field">' +
-            '<label for="fDetails">Detalhes/Observações</label>' +
-            '<textarea id="fDetails" placeholder="Contexto adicional sobre a substituição…"></textarea>' +
+          '<div id="tecidoFields">' +
+            '<div class="field">' +
+              '<label for="fMotivo">Motivo da substituição</label>' +
+              '<textarea id="fMotivo" placeholder="Descreva o motivo da substituição…"></textarea>' +
+            '</div>' +
+            '<div class="field">' +
+              '<label for="fJaUtilizado">Já Utilizado</label>' +
+              '<select id="fJaUtilizado">' +
+                '<option value="" disabled selected>Selecionar…</option>' +
+                '<option value="sim">Sim</option>' +
+                '<option value="nao">Não</option>' +
+              '</select>' +
+            '</div>' +
+            '<div class="field">' +
+              '<label for="fVeioCorteSubstituto">Veio Corte Substituto</label>' +
+              '<select id="fVeioCorteSubstituto">' +
+                '<option value="" disabled selected>Selecionar…</option>' +
+                '<option value="sim">Sim</option>' +
+                '<option value="nao">Não</option>' +
+              '</select>' +
+            '</div>' +
+            '<div class="field">' +
+              '<label for="fCompra">COMPRA</label>' +
+              '<input type="text" id="fCompra" placeholder="Informações de compra">' +
+            '</div>' +
+            '<div class="field">' +
+              '<label for="fSituacaoSubstituto">Situação do Substituto</label>' +
+              '<input type="text" id="fSituacaoSubstituto" placeholder="Ex: Em aprovação, disponível em estoque…">' +
+            '</div>' +
+            '<div class="field">' +
+              '<label for="fQtdMinima">Quantidade mínima</label>' +
+              '<input type="text" id="fQtdMinima" placeholder="Ex: 500m">' +
+            '</div>' +
+            '<div class="field">' +
+              '<label for="fLiberacaoAprovacao">Liberação/Aprovação</label>' +
+              '<select id="fLiberacaoAprovacao">' +
+                '<option value="" disabled selected>Selecionar setor…</option>' +
+                LIBERACAO_SETORES.map(function(s){ return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join("") +
+              '</select>' +
+            '</div>' +
+            '<div class="field">' +
+              '<label for="fSepararEstoque">Separar no Estoque</label>' +
+              '<select id="fSepararEstoque">' +
+                '<option value="" disabled selected>Selecionar…</option>' +
+                '<option value="sim">Sim</option>' +
+                '<option value="nao">Não</option>' +
+              '</select>' +
+            '</div>' +
+          '</div>' +
+          '<div id="aviamentoFields" style="display:none;">' +
+            '<div class="field">' +
+              '<label for="fDetails">Detalhes/Observações</label>' +
+              '<textarea id="fDetails" placeholder="Contexto adicional sobre a substituição…"></textarea>' +
+            '</div>' +
           '</div>' +
           '<div class="field">' +
             '<label>Imagem de referência (opcional)</label>' +
@@ -1153,6 +1283,26 @@
 
     var pendingImageDataUrl = null;
     document.getElementById("btnClosePanel").addEventListener("click", closePanel);
+
+    function updateTipoFields(){
+      var tipo = document.querySelector('input[name="fTipo"]:checked').value;
+      var isTecido = tipo === "tecido";
+      document.getElementById("tecidoDeParaFields").style.display = isTecido ? "" : "none";
+      document.getElementById("aviamentoDeParaFields").style.display = isTecido ? "none" : "";
+      document.getElementById("tecidoFields").style.display = isTecido ? "" : "none";
+      document.getElementById("aviamentoFields").style.display = isTecido ? "none" : "";
+      document.getElementById("fTecidoDe").required = isTecido;
+      document.getElementById("fTecidoPara").required = isTecido;
+      document.getElementById("fMotivo").required = isTecido;
+      document.getElementById("fJaUtilizado").required = isTecido;
+      document.getElementById("fVeioCorteSubstituto").required = isTecido;
+      document.getElementById("fLiberacaoAprovacao").required = isTecido;
+      document.getElementById("fSepararEstoque").required = isTecido;
+      document.getElementById("fOriginal").required = !isTecido;
+      document.getElementById("fSubstitute").required = !isTecido;
+    }
+    document.querySelectorAll('input[name="fTipo"]').forEach(function(r){ r.addEventListener("change", updateTipoFields); });
+    updateTipoFields();
 
     document.getElementById("fImage").addEventListener("change", function(e){
       var file = e.target.files && e.target.files[0];
@@ -1173,18 +1323,56 @@
 
     document.getElementById("createForm").addEventListener("submit", function(e){
       e.preventDefault();
-      var originalFabric = document.getElementById("fOriginal").value.trim();
-      var substituteFabric = document.getElementById("fSubstitute").value.trim();
+      var tipo = document.querySelector('input[name="fTipo"]:checked').value;
       var refsRaw = document.getElementById("fRefs").value.trim();
       var brand = document.getElementById("fBrand").value;
-      var details = document.getElementById("fDetails").value.trim();
 
       var refs = refsRaw.split(",").map(function(r){ return r.trim(); }).filter(Boolean);
       var uniqueRefs = refs.filter(function(r,i){ return refs.indexOf(r) === i; });
 
-      if (!originalFabric || !substituteFabric || !uniqueRefs.length || !brand){
-        toast("Preencha tecido/aviamento atual, substituto, ao menos uma referência e a marca.", "error");
-        return;
+      var originalFabric, substituteFabric, details, tecidoData = null;
+
+      if (tipo === "tecido"){
+        var de = document.getElementById("fTecidoDe").value.trim();
+        var para = document.getElementById("fTecidoPara").value.trim();
+        var motivo = document.getElementById("fMotivo").value.trim();
+        var jaUtilizado = document.getElementById("fJaUtilizado").value;
+        var veioCorteSubstituto = document.getElementById("fVeioCorteSubstituto").value;
+        var compra = document.getElementById("fCompra").value.trim();
+        var situacaoSubstituto = document.getElementById("fSituacaoSubstituto").value.trim();
+        var quantidadeMinima = document.getElementById("fQtdMinima").value.trim();
+        var liberacaoAprovacao = document.getElementById("fLiberacaoAprovacao").value;
+        var separarEstoque = document.getElementById("fSepararEstoque").value;
+
+        if (!de || !para || !uniqueRefs.length || !brand || !motivo || !jaUtilizado || !veioCorteSubstituto || !liberacaoAprovacao || !separarEstoque){
+          toast("Preencha De, Para, referências, marca, motivo, Já Utilizado, Veio Corte Substituto, Liberação/Aprovação e Separar no Estoque.", "error");
+          return;
+        }
+
+        originalFabric = de;
+        substituteFabric = para;
+        details = motivo;
+        tecidoData = {
+          de: de,
+          para: para,
+          motivo: motivo,
+          jaUtilizado: jaUtilizado === "sim",
+          veioCorteSubstituto: veioCorteSubstituto === "sim",
+          compra: compra,
+          situacaoSubstituto: situacaoSubstituto,
+          quantidadeMinima: quantidadeMinima,
+          liberacaoAprovacao: liberacaoAprovacao,
+          separarEstoque: separarEstoque === "sim"
+        };
+      } else {
+        originalFabric = document.getElementById("fOriginal").value.trim();
+        substituteFabric = document.getElementById("fSubstitute").value.trim();
+        details = document.getElementById("fDetails").value.trim();
+
+        if (!originalFabric || !substituteFabric || !uniqueRefs.length || !brand){
+          toast("Preencha aviamento atual, substituto, ao menos uma referência e a marca.", "error");
+          return;
+        }
       }
 
       var actionsInitial = {}, actionsFinal = {};
@@ -1196,8 +1384,10 @@
       var now = Date.now();
       state.cards.push({
         id: uid(),
+        tipo: tipo,
         originalFabric: originalFabric,
         substituteFabric: substituteFabric,
+        tecido: tecidoData,
         image: pendingImageDataUrl,
         brand: brand,
         references: uniqueRefs,
@@ -1366,6 +1556,7 @@
             '<div class="ref-list">' + card.references.map(function(r){ return '<span class="ref-pill mono">' + esc(r) + '</span>'; }).join("") + '</div>' +
           '</div>' +
           (card.details ? '<div class="field"><label>Detalhes/Observações</label><div class="detail-text">' + esc(card.details) + '</div></div>' : '') +
+          (card.tipo === "tecido" && card.tecido ? renderTecidoInfo(card.tecido) : '') +
         '</div>' +
 
         actionsSectionHtml +
@@ -1382,7 +1573,7 @@
         '</div>' +
 
         '<div class="panel-section">' +
-          '<button class="danger-link" id="btnDeleteCard">Excluir solicitação</button>' +
+          '<div id="deleteWrap"><button class="danger-link" id="btnDeleteCard">Excluir solicitação</button></div>' +
         '</div>' +
 
       '</div>';
@@ -1464,17 +1655,33 @@
         moveCard(card.id, btn.getAttribute("data-dest"));
       });
     });
-    var delBtn = document.getElementById("btnDeleteCard");
-    if (delBtn) delBtn.addEventListener("click", function(){
-      if (confirm("Excluir a solicitação de " + card.originalFabric + "? Esta ação não pode ser desfeita.")){
-        state.cards = state.cards.filter(function(c){ return c.id !== card.id; });
-        save();
-        renderAll();
-        closePanel();
-        toast("Solicitação excluída.", "success");
-      }
-    });
+    var deleteWrap = document.getElementById("deleteWrap");
+    function bindDeleteLink(){
+      deleteWrap.innerHTML = '<button class="danger-link" id="btnDeleteCard">Excluir solicitação</button>';
+      document.getElementById("btnDeleteCard").addEventListener("click", function(){
+        deleteWrap.innerHTML =
+          '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">' +
+            '<span style="font-size:12px;color:var(--ink-soft);">Excluir esta solicitação? Não pode ser desfeita.</span>' +
+            '<button type="button" class="danger-link" id="btnDeleteConfirm">Confirmar exclusão</button>' +
+            '<button type="button" class="move-btn" id="btnDeleteCancel">Cancelar</button>' +
+          '</div>';
+        document.getElementById("btnDeleteConfirm").addEventListener("click", function(){
+          state.cards = state.cards.filter(function(c){ return c.id !== card.id; });
+          save();
+          renderAll();
+          closePanel();
+          toast("Solicitação excluída.", "success");
+        });
+        document.getElementById("btnDeleteCancel").addEventListener("click", bindDeleteLink);
+      });
+    }
+    bindDeleteLink();
   }
+
+  document.getElementById("globalSearch").addEventListener("input", function(e){
+    searchQuery = e.target.value.trim().toLowerCase();
+    renderAll();
+  });
 
   /* ---------- Init ---------- */
   load().then(renderAll);
