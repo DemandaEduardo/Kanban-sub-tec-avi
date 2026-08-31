@@ -455,6 +455,26 @@
   }
   .final-obs-textarea:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent;}
 
+  .divisoes-block{margin-top:8px;padding-left:52px;display:flex;flex-direction:column;gap:6px;}
+  .divisao-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .divisao-input{
+    flex:1 1 0;min-width:70px;font-size:12.5px;padding:5px 7px;border-radius:6px;
+    border:1px solid var(--line);background:var(--surface-raised);color:var(--ink);
+  }
+  .divisao-input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent;}
+  .divisao-remove{
+    flex:none;display:flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:6px;border:1px solid var(--line);
+    background:var(--surface-raised);color:var(--ink-faint);cursor:pointer;
+  }
+  .divisao-remove svg{width:11px;height:11px;display:block;}
+  .divisao-remove:hover{color:var(--danger);border-color:var(--danger);}
+  .divisao-add{
+    align-self:flex-start;display:inline-flex;align-items:center;gap:5px;
+    font-size:11.5px;font-weight:600;color:var(--accent);background:none;border:none;cursor:pointer;padding:2px 0;
+  }
+  .divisao-add svg{width:12px;height:12px;display:block;}
+
   .move-grid{display:flex;flex-wrap:wrap;gap:8px;}
   .move-btn{
     font-size:11.5px;font-weight:600;padding:7px 11px;border-radius:8px;cursor:pointer;
@@ -616,11 +636,35 @@
       else ENG_FLAGS.forEach(function(f){ if (card.engFlags[r][f.key] === undefined) card.engFlags[r][f.key] = false; });
     });
   }
+  function defaultDivisao(){ return { alternativa:"", quantidade:"", numeroOp:"" }; }
+  function renderDivisoesBlock(r, divisoes){
+    return (
+      '<div class="divisoes-block">' +
+        divisoes.map(function(d, i){
+          return (
+            '<div class="divisao-row" data-ref="' + esc(r) + '" data-idx="' + i + '">' +
+              '<input type="text" class="divisao-input mono" data-field="alternativa" placeholder="Alternativa" title="Alternativa" value="' + esc(d.alternativa || "") + '">' +
+              '<input type="text" class="divisao-input mono" data-field="quantidade" placeholder="Qtd." title="Quantidade" value="' + esc(d.quantidade || "") + '">' +
+              '<input type="text" class="divisao-input mono" data-field="numeroOp" placeholder="Nº OP" title="Número da OP" value="' + esc(d.numeroOp || "") + '">' +
+              (divisoes.length > 1 ? '<button type="button" class="divisao-remove" data-ref="' + esc(r) + '" data-idx="' + i + '" aria-label="Remover divisão">' + ICON_CLOSE + '</button>' : '') +
+            '</div>'
+          );
+        }).join("") +
+        '<button type="button" class="divisao-add" data-ref="' + esc(r) + '">' + ICON_PLUS + ' Adicionar divisão</button>' +
+      '</div>'
+    );
+  }
   function ensureFinalActions(card){
     if (!card.actionsFinal || typeof card.actionsFinal !== "object") card.actionsFinal = {};
     card.references.forEach(function(r){
-      if (!card.actionsFinal[r]) card.actionsFinal[r] = { action:null, finalized:false, observacao:"" };
-      else if (card.actionsFinal[r].observacao === undefined) card.actionsFinal[r].observacao = "";
+      if (!card.actionsFinal[r]) card.actionsFinal[r] = { action:null, finalized:false, observacao:"", divisoes:[] };
+      else {
+        if (card.actionsFinal[r].observacao === undefined) card.actionsFinal[r].observacao = "";
+        if (!Array.isArray(card.actionsFinal[r].divisoes)) card.actionsFinal[r].divisoes = [];
+      }
+      if (card.actionsFinal[r].action === "Dividir OP" && !card.actionsFinal[r].divisoes.length){
+        card.actionsFinal[r].divisoes.push(defaultDivisao());
+      }
     });
   }
 
@@ -787,8 +831,10 @@
         if (actionsInitial[r].deNumber === undefined) actionsInitial[r].deNumber = null;
         if (actionsInitial[r].paraNumber === undefined) actionsInitial[r].paraNumber = null;
         if (actionsInitial[r].padrao === undefined) actionsInitial[r].padrao = false;
-        if(!actionsFinal[r]) actionsFinal[r] = {action:null, finalized:false, observacao:""};
+        if(!actionsFinal[r]) actionsFinal[r] = {action:null, finalized:false, observacao:"", divisoes:[]};
         if (actionsFinal[r].observacao === undefined) actionsFinal[r].observacao = "";
+        if (!Array.isArray(actionsFinal[r].divisoes)) actionsFinal[r].divisoes = [];
+        if (actionsFinal[r].action === "Dividir OP" && !actionsFinal[r].divisoes.length) actionsFinal[r].divisoes.push(defaultDivisao());
         if(!engFlags[r]) engFlags[r] = defaultEngFlags();
       });
       return {
@@ -1393,7 +1439,7 @@
       var actionsInitial = {}, actionsFinal = {};
       uniqueRefs.forEach(function(r){
         actionsInitial[r] = { action:null, done:false, deNumber:null, paraNumber:null, padrao:false };
-        actionsFinal[r] = { action:null, finalized:false, observacao:"" };
+        actionsFinal[r] = { action:null, finalized:false, observacao:"", divisoes:[] };
       });
 
       var now = Date.now();
@@ -1535,6 +1581,7 @@
                   '</label>' +
                 '</div>' +
                 '<textarea class="final-obs-input" data-ref="' + esc(r) + '" placeholder="Observação — detalhe a ação para esta referência…">' + esc(f.observacao || "") + '</textarea>' +
+                (cur === "Dividir OP" ? renderDivisoesBlock(r, f.divisoes || []) : "") +
                 (!canFinalize ? '<div class="hint">Preencha ação e observação para poder marcar como Finalizada.</div>' : '') +
               '</div>'
             );
@@ -1642,6 +1689,39 @@
       sel.addEventListener("change", function(){
         var ref = sel.getAttribute("data-ref");
         card.actionsFinal[ref].action = sel.value || null;
+        if (sel.value === "Dividir OP" && !(card.actionsFinal[ref].divisoes || []).length){
+          card.actionsFinal[ref].divisoes = [defaultDivisao()];
+        }
+        save();
+        renderAll();
+        renderPanel();
+      });
+    });
+    panelEl.querySelectorAll(".divisao-input").forEach(function(inp){
+      inp.addEventListener("change", function(){
+        var row = inp.closest(".divisao-row");
+        var ref = row.getAttribute("data-ref");
+        var idx = Number(row.getAttribute("data-idx"));
+        var field = inp.getAttribute("data-field");
+        card.actionsFinal[ref].divisoes[idx][field] = inp.value.trim();
+        save();
+        renderAll();
+      });
+    });
+    panelEl.querySelectorAll(".divisao-add").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var ref = btn.getAttribute("data-ref");
+        card.actionsFinal[ref].divisoes.push(defaultDivisao());
+        save();
+        renderAll();
+        renderPanel();
+      });
+    });
+    panelEl.querySelectorAll(".divisao-remove").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var ref = btn.getAttribute("data-ref");
+        var idx = Number(btn.getAttribute("data-idx"));
+        card.actionsFinal[ref].divisoes.splice(idx, 1);
         save();
         renderAll();
         renderPanel();
