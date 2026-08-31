@@ -594,6 +594,7 @@
   ];
 
   var LIBERACAO_SETORES = ["Compras", "Demanda", "Comercial", "Engenharia", "Desenvolvimento", "Qualidade", "Eng.Processos"];
+  var DEMANDA_OPTIONS = ["Mostruário", "Cápsulas", "Saldo", "Aposta", "1", "2", "3", "4", "5", "6", "7", "8"];
   var INITIAL_ACTIONS = ["Trocar alternativa", "Criar alternativa"];
   var FINAL_ACTIONS = ["Dividir OP", "Atualizar OP", "Gerar nova OP"];
   var ENG_FLAGS = [
@@ -645,11 +646,13 @@
   }
   function daysBetween(ts){ return Math.floor((Date.now() - ts) / DAY_MS); }
   function simNao(v){ return v ? "Sim" : "Não"; }
+  function ordinalDemanda(v){ return /^\d+$/.test(v || "") ? (v + "ª") : (v || ""); }
   function renderTecidoInfo(t){
     return (
       '<div class="field">' +
         '<label>Detalhes da substituição de tecido</label>' +
         '<div class="detail-text">' +
+          (t.demanda ? 'Demanda: ' + esc(ordinalDemanda(t.demanda)) + '<br>' : '') +
           'Já Utilizado: ' + simNao(t.jaUtilizado) + '<br>' +
           'Veio Corte Substituto: ' + simNao(t.veioCorteSubstituto) + '<br>' +
           (t.compra ? 'COMPRA: ' + esc(t.compra) + '<br>' : '') +
@@ -686,7 +689,7 @@
     var fields = [card.originalFabric, card.substituteFabric, card.brand, card.details];
     fields = fields.concat(card.references || []);
     if (card.tecido){
-      fields.push(card.tecido.de, card.tecido.para, card.tecido.motivo, card.tecido.compra,
+      fields.push(ordinalDemanda(card.tecido.demanda), card.tecido.de, card.tecido.para, card.tecido.motivo, card.tecido.compra,
         card.tecido.situacaoSubstituto, card.tecido.quantidadeMinima, card.tecido.liberacaoAprovacao);
     }
     (card.references || []).forEach(function(r){
@@ -965,6 +968,7 @@
   var ICON_CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   var ICON_ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M13 6l7 6-7 6"/></svg>';
   var ICON_IMAGE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M4 16.5l5-5 3.5 3.5L17 10l3 3"/></svg>';
+  var ICON_CALENDAR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 3v3M16 3v3"/></svg>';
 
   /* ---------- Rendering: stats ---------- */
   function renderStats(){
@@ -1035,6 +1039,7 @@
         '</div>' +
         (card.details ? '<div class="card-details">' + esc(card.details) + '</div>' : '') +
         '<div class="card-footer">' +
+          '<span class="time-badge" title="Criado em ' + fmtDate(card.createdAt) + '">' + ICON_CALENDAR + fmtDate(card.createdAt) + '</span>' +
           '<span class="time-badge">' + ICON_CLOCK + totalDays + 'd total</span>' +
           '<span class="time-badge' + (late ? ' late' : '') + '">' + ICON_CLOCK + colDays + 'd na etapa</span>' +
           engFlagsHtml +
@@ -1182,6 +1187,13 @@
           '</div>' +
           '<div id="tecidoDeParaFields">' +
             '<div class="field">' +
+              '<label for="fDemanda">Demanda</label>' +
+              '<select id="fDemanda">' +
+                '<option value="" disabled selected>Selecionar demanda…</option>' +
+                DEMANDA_OPTIONS.map(function(d){ return '<option value="' + esc(d) + '">' + esc(ordinalDemanda(d)) + '</option>'; }).join("") +
+              '</select>' +
+            '</div>' +
+            '<div class="field">' +
               '<label for="fTecidoDe">De (código do tecido)</label>' +
               '<input type="text" id="fTecidoDe" placeholder="Código do tecido atual">' +
             '</div>' +
@@ -1291,6 +1303,7 @@
       document.getElementById("aviamentoDeParaFields").style.display = isTecido ? "none" : "";
       document.getElementById("tecidoFields").style.display = isTecido ? "" : "none";
       document.getElementById("aviamentoFields").style.display = isTecido ? "none" : "";
+      document.getElementById("fDemanda").required = isTecido;
       document.getElementById("fTecidoDe").required = isTecido;
       document.getElementById("fTecidoPara").required = isTecido;
       document.getElementById("fMotivo").required = isTecido;
@@ -1333,6 +1346,7 @@
       var originalFabric, substituteFabric, details, tecidoData = null;
 
       if (tipo === "tecido"){
+        var demanda = document.getElementById("fDemanda").value;
         var de = document.getElementById("fTecidoDe").value.trim();
         var para = document.getElementById("fTecidoPara").value.trim();
         var motivo = document.getElementById("fMotivo").value.trim();
@@ -1344,8 +1358,8 @@
         var liberacaoAprovacao = document.getElementById("fLiberacaoAprovacao").value;
         var separarEstoque = document.getElementById("fSepararEstoque").value;
 
-        if (!de || !para || !uniqueRefs.length || !brand || !motivo || !jaUtilizado || !veioCorteSubstituto || !liberacaoAprovacao || !separarEstoque){
-          toast("Preencha De, Para, referências, marca, motivo, Já Utilizado, Veio Corte Substituto, Liberação/Aprovação e Separar no Estoque.", "error");
+        if (!demanda || !de || !para || !uniqueRefs.length || !brand || !motivo || !jaUtilizado || !veioCorteSubstituto || !liberacaoAprovacao || !separarEstoque){
+          toast("Preencha Demanda, De, Para, referências, marca, motivo, Já Utilizado, Veio Corte Substituto, Liberação/Aprovação e Separar no Estoque.", "error");
           return;
         }
 
@@ -1353,6 +1367,7 @@
         substituteFabric = para;
         details = motivo;
         tecidoData = {
+          demanda: demanda,
           de: de,
           para: para,
           motivo: motivo,
