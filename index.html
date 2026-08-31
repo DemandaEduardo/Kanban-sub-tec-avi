@@ -1036,9 +1036,16 @@
       return f && ENG_FLAGS.every(function(flag){ return !!f[flag.key]; });
     });
   }
+  function divisoesComplete(divisoes){
+    return Array.isArray(divisoes) && divisoes.length > 0 && divisoes.every(function(d){
+      return !!(d.alternativa && d.alternativa.trim() && d.quantidade && d.quantidade.trim() && d.numeroOp && d.numeroOp.trim());
+    });
+  }
   function finalRefActionObsComplete(card, r){
     var f = card.actionsFinal[r];
-    return !!(f && f.action && f.observacao && f.observacao.trim());
+    if (!f || !f.action || !f.observacao || !f.observacao.trim()) return false;
+    if (f.action === "Dividir OP" && !divisoesComplete(f.divisoes)) return false;
+    return true;
   }
   function finalActionObsComplete(card){
     return card.references.every(function(r){ return finalRefActionObsComplete(card, r); });
@@ -1066,7 +1073,7 @@
       return { ok:false, reason:"Todas as ações de Engenharia precisam estar marcadas como Concluídas antes de mover para Demanda (Final)." };
     }
     if (dest === "concluido" && !finalComplete(card)){
-      return { ok:false, reason:"Preencha ação e observação de todas as referências e marque-as como Finalizada na Demanda (Final) antes de concluir o cartão." };
+      return { ok:false, reason:"Preencha ação, observação (e os dados de divisão de OP, quando aplicável) de todas as referências e marque-as como Finalizada na Demanda (Final) antes de concluir o cartão." };
     }
     return { ok:true };
   }
@@ -1689,7 +1696,7 @@
                 '</div>' +
                 '<textarea class="final-obs-input" data-ref="' + esc(r) + '" placeholder="Observação — detalhe a ação para esta referência…">' + esc(f.observacao || "") + '</textarea>' +
                 (cur === "Dividir OP" ? renderDivisoesBlock(r, f.divisoes || []) : "") +
-                (!canFinalize ? '<div class="hint">Preencha ação e observação para poder marcar como Finalizada.</div>' : '') +
+                (!canFinalize ? '<div class="hint">' + (cur === "Dividir OP" ? "Preencha ação, observação e todos os campos de divisão (Alternativa, Qtd e Nº OP) para poder marcar como Finalizada." : "Preencha ação e observação para poder marcar como Finalizada.") + '</div>' : '') +
               '</div>'
             );
           }).join("") +
@@ -1804,6 +1811,7 @@
         card.actionsFinal[ref].divisoes[idx][field] = inp.value.trim();
         save();
         renderAll();
+        renderPanel();
       });
     });
     panelEl.querySelectorAll(".divisao-add").forEach(function(btn){
