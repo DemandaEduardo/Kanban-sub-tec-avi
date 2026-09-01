@@ -257,7 +257,7 @@
   .card.dragging{opacity:0.4;}
   .card:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 
-  .card-row-top{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
+  .card-row-top{display:flex;align-items:center;gap:6px;margin-bottom:7px;flex-wrap:wrap;}
   .image-indicator{
     margin-left:auto;flex:none;display:flex;align-items:center;justify-content:center;
     color:var(--ink-faint);
@@ -448,6 +448,11 @@
   .check-label input{width:15px;height:15px;accent-color:var(--success);cursor:pointer;}
   .check-label.disabled{opacity:0.45;cursor:not-allowed;}
 
+  .checkbox-grid{display:flex;flex-wrap:wrap;gap:8px 14px;padding-top:2px;}
+
+  .brand-chip-row{display:flex;flex-wrap:wrap;gap:5px;}
+  .brand-chip.pending{background:var(--bg);color:var(--ink-faint);border:1px dashed var(--line);}
+
   .final-obs-textarea{
     width:100%;font-family:inherit;font-size:12.5px;color:var(--ink);
     background:var(--surface-raised);border:1px solid var(--line);border-radius:8px;
@@ -615,7 +620,7 @@
   ];
 
   var LIBERACAO_SETORES = ["Compras", "Demanda", "Comercial", "Engenharia", "Desenvolvimento", "Qualidade", "Eng.Processos"];
-  var DEMANDA_OPTIONS = ["Mostruário", "Cápsulas", "Saldo", "Aposta", "1", "2", "3", "4", "5", "6", "7", "8"];
+  var DEMANDA_OPTIONS = ["Mostruário", "Cápsulas", "Saldo", "Aposta", "1", "2", "3", "4", "5", "6", "7", "8", "Outros"];
   var INITIAL_ACTIONS = ["Trocar alternativa", "Criar alternativa"];
   var FINAL_ACTIONS = ["Dividir OP", "Atualizar OP", "Gerar nova OP"];
   var ENG_FLAGS = [
@@ -745,6 +750,54 @@
     for (var i=0;i<BRANDS.length;i++){ if (BRANDS[i].name === name) return BRANDS[i]; }
     return { name:name, bg:"#8A8574", fg:"#FFFFFF" };
   }
+  // Prefixos mais longos primeiro (FA/FB) para não colidir com marcas de letra única.
+  var BRAND_PREFIX_MAP = [
+    { prefix:"FA", brand:"Bimbi Menina" },
+    { prefix:"FB", brand:"Bimbi Menina" },
+    { prefix:"N", brand:"Animê" },
+    { prefix:"P", brand:"petite" },
+    { prefix:"L", brand:"Anime Bebe" },
+    { prefix:"R", brand:"Authoria" },
+    { prefix:"I", brand:"Youccie" },
+    { prefix:"D", brand:"Youccie" },
+    { prefix:"H", brand:"Momi" },
+    { prefix:"J", brand:"Momi Mini" },
+    { prefix:"C", brand:"Momi Bebe" },
+    { prefix:"G", brand:"Bimbi Menino" }
+  ];
+  function detectBrandForRef(ref){
+    var upper = String(ref || "").trim().toUpperCase();
+    for (var i=0;i<BRAND_PREFIX_MAP.length;i++){
+      if (upper.indexOf(BRAND_PREFIX_MAP[i].prefix) === 0) return BRAND_PREFIX_MAP[i].brand;
+    }
+    return null;
+  }
+  // Referência sem prefixo reconhecido herda a marca já gravada no cartão (compatibilidade com cartões antigos).
+  function detectBrandForRefOrFallback(card, ref){
+    return detectBrandForRef(ref) || card.brand || null;
+  }
+  function unresolvedBrandRefs(card){
+    return (card.references || []).filter(function(r){ return !detectBrandForRefOrFallback(card, r); });
+  }
+  function displayBrandsForCard(card){
+    if (card.brand) return [card.brand];
+    var seen = {}, order = [];
+    (card.references || []).forEach(function(r){
+      var b = detectBrandForRef(r);
+      if (b && !seen[b]){ seen[b] = true; order.push(b); }
+    });
+    return order;
+  }
+  function renderBrandChips(card){
+    var brands = displayBrandsForCard(card);
+    if (!brands.length){
+      return '<span class="brand-chip pending">Marca a definir</span>';
+    }
+    return brands.map(function(name){
+      var b = brandOf(name);
+      return '<span class="brand-chip" style="--brand-bg:' + b.bg + ';--brand-fg:' + b.fg + ';background:var(--brand-bg);color:var(--brand-fg);"><span class="dot"></span>' + esc(name) + '</span>';
+    }).join("");
+  }
   function colLabel(id){
     for (var i=0;i<COLUMNS.length;i++){ if (COLUMNS[i].id === id) return COLUMNS[i].label; }
     return id;
@@ -795,7 +848,7 @@
           (t.compra ? 'COMPRA: ' + esc(t.compra) + '<br>' : '') +
           (t.situacaoSubstituto ? 'Situação do Substituto: ' + esc(t.situacaoSubstituto) + '<br>' : '') +
           (t.quantidadeMinima ? 'Quantidade mínima: ' + esc(t.quantidadeMinima) + '<br>' : '') +
-          'Liberação/Aprovação: ' + esc(t.liberacaoAprovacao || '—') + '<br>' +
+          'Liberação/Aprovação: ' + esc((Array.isArray(t.liberacaoAprovacao) ? t.liberacaoAprovacao.join(', ') : t.liberacaoAprovacao) || '—') + '<br>' +
           'Separar no Estoque: ' + simNao(t.separarEstoque) +
         '</div>' +
       '</div>'
@@ -823,11 +876,13 @@
 
   function cardMatchesSearch(card, q){
     if (!q) return true;
-    var fields = [card.requestNumber, card.originalFabric, card.substituteFabric, card.brand, card.details];
+    var fields = [card.requestNumber, card.originalFabric, card.substituteFabric, card.details];
+    fields = fields.concat(displayBrandsForCard(card));
     fields = fields.concat(card.references || []);
     if (card.tecido){
       fields.push(ordinalDemanda(card.tecido.demanda), card.tecido.de, card.tecido.para, card.tecido.motivo, card.tecido.compra,
-        card.tecido.situacaoSubstituto, card.tecido.quantidadeMinima, card.tecido.liberacaoAprovacao);
+        card.tecido.situacaoSubstituto, card.tecido.quantidadeMinima);
+      fields = fields.concat(card.tecido.liberacaoAprovacao || []);
     }
     (card.references || []).forEach(function(r){
       var ai = card.actionsInitial && card.actionsInitial[r];
@@ -1064,8 +1119,20 @@
   }
   var FINAL_STATUS_LABEL = { red:"Pendente", yellow:"Em andamento", blue:"Falta finalizar", green:"Concluído" };
   var FINAL_STATUS_BADGE_CLASS = { red:"pending", yellow:"caution", blue:"info", green:"ok" };
+  function photoRequired(card){
+    return !!(card.tecido && card.tecido.separarEstoque === true);
+  }
   function validateMove(card, dest){
     if (dest === card.column) return { ok:true };
+    if (card.column === "compras" && dest !== "compras"){
+      var unresolved = unresolvedBrandRefs(card);
+      if (unresolved.length){
+        return { ok:false, reason:"Não foi possível identificar a marca das referências: " + unresolved.join(", ") + ". Confira o prefixo de cada referência." };
+      }
+      if (photoRequired(card) && !card.image){
+        return { ok:false, reason:"Separar no Estoque está marcado como Sim — anexe uma foto de referência antes de mover para a próxima etapa." };
+      }
+    }
     if (dest === "engenharia" && !initialComplete(card)){
       return { ok:false, reason:"Defina uma ação (Trocar ou Criar alternativa) para cada referência na Demanda (Inicial) antes de mover para Engenharia." };
     }
@@ -1077,6 +1144,53 @@
     }
     return { ok:true };
   }
+  function buildSplitCard(source, brand, refs, dest, requestNumber){
+    var actionsInitial = {}, actionsFinal = {}, engFlags = {};
+    refs.forEach(function(r){
+      actionsInitial[r] = { action:null, done:false, deNumber:null, paraNumber:null, padrao:false };
+      actionsFinal[r] = { action:null, finalized:false, observacao:"", divisoes:[] };
+      engFlags[r] = defaultEngFlags();
+    });
+    return {
+      id: uid(),
+      requestNumber: requestNumber,
+      tipo: source.tipo,
+      originalFabric: source.originalFabric,
+      substituteFabric: source.substituteFabric,
+      tecido: source.tecido,
+      image: source.image,
+      brand: brand,
+      references: refs,
+      details: source.details,
+      column: dest,
+      createdAt: source.createdAt,
+      enteredColumnAt: Date.now(),
+      actionsInitial: actionsInitial,
+      actionsFinal: actionsFinal,
+      engFlags: engFlags
+    };
+  }
+  function applyBrandSplit(card, dest){
+    var groups = {}, order = [];
+    card.references.forEach(function(r){
+      var b = detectBrandForRefOrFallback(card, r);
+      if (!groups[b]){ groups[b] = []; order.push(b); }
+      groups[b].push(r);
+    });
+    if (order.length <= 1){
+      card.brand = order[0] || card.brand;
+      card.column = dest;
+      card.enteredColumnAt = Date.now();
+      return [card];
+    }
+    var seq = maxRequestSeq(state.cards);
+    var resultCards = order.map(function(b){
+      seq++;
+      return buildSplitCard(card, b, groups[b], dest, "RQ" + String(seq).padStart(4, "0"));
+    });
+    state.cards = state.cards.filter(function(c){ return c.id !== card.id; }).concat(resultCards);
+    return resultCards;
+  }
   function moveCard(cardId, dest){
     var card = state.cards.find(function(c){ return c.id === cardId; });
     if (!card) return;
@@ -1087,13 +1201,25 @@
       return;
     }
     var fromStage = card.column;
-    card.column = dest;
-    card.enteredColumnAt = Date.now();
+    var resultCards;
+    if (fromStage === "compras"){
+      resultCards = applyBrandSplit(card, dest);
+    } else {
+      card.column = dest;
+      card.enteredColumnAt = Date.now();
+      resultCards = [card];
+    }
     save();
     renderAll();
-    if (panelCardId === cardId) renderPanel();
-    toast("Cartão movido para " + colLabel(dest) + ".", "success");
-    notifyStageMove(card, fromStage, dest);
+    var split = resultCards.length > 1;
+    if (split){
+      if (panelCardId === cardId) closePanel();
+      toast("Cartão dividido em " + resultCards.length + " (" + resultCards.map(function(c){ return c.brand; }).join(", ") + ") e movidos para " + colLabel(dest) + ".", "success");
+    } else {
+      if (panelCardId === cardId) renderPanel();
+      toast("Cartão movido para " + colLabel(dest) + ".", "success");
+    }
+    resultCards.forEach(function(c){ notifyStageMove(c, fromStage, dest); });
   }
 
   /* ---------- Toasts ---------- */
@@ -1138,7 +1264,8 @@
 
   /* ---------- Rendering: board ---------- */
   function renderCard(card){
-    var brand = brandOf(card.brand);
+    var cardBrands = displayBrandsForCard(card);
+    var accentColor = cardBrands.length ? brandOf(cardBrands[0]).bg : "#8A8574";
     var totalDays = daysBetween(card.createdAt);
     var colDays = daysBetween(card.enteredColumnAt);
     var late = colDays >= 3;
@@ -1169,12 +1296,10 @@
 
     return (
       '<div class="card" draggable="true" data-id="' + card.id + '" tabindex="0" role="button" ' +
-        'aria-label="' + esc(card.requestNumber || "") + ', ' + esc(card.originalFabric) + ', ' + esc(brand.name) + '" style="--brand-color:' + brand.bg + '">' +
+        'aria-label="' + esc(card.requestNumber || "") + ', ' + esc(card.originalFabric) + ', ' + esc(cardBrands.join(", ")) + '" style="--brand-color:' + accentColor + '">' +
         '<div class="card-row-top">' +
           '<span class="request-no mono">' + esc(card.requestNumber || "") + '</span>' +
-          '<span class="brand-chip" style="--brand-bg:' + brand.bg + ';--brand-fg:' + brand.fg + ';background:var(--brand-bg);color:var(--brand-fg);">' +
-            '<span class="dot"></span>' + esc(brand.name) +
-          '</span>' +
+          renderBrandChips(card) +
           (card.image ? '<span class="image-indicator" title="Imagem anexada">' + ICON_IMAGE + '</span>' : '') +
         '</div>' +
         '<div class="card-title" title="' + esc(card.originalFabric) + '">' + esc(card.originalFabric) + '</div>' +
@@ -1204,12 +1329,16 @@
     var board = document.getElementById("board");
     board.innerHTML = COLUMNS.map(function(col){
       var allCards = state.cards.filter(function(c){ return c.column === col.id; });
-      var brandsInColumn = allCards.map(function(c){ return c.brand; }).filter(function(b,i,arr){ return arr.indexOf(b) === i; }).sort();
+      var brandsInColumn = [];
+      allCards.forEach(function(c){
+        displayBrandsForCard(c).forEach(function(b){ if (brandsInColumn.indexOf(b) === -1) brandsInColumn.push(b); });
+      });
+      brandsInColumn.sort();
       if (columnBrandFilter[col.id] && brandsInColumn.indexOf(columnBrandFilter[col.id]) === -1){
         columnBrandFilter[col.id] = null;
       }
       var activeBrand = columnBrandFilter[col.id] || "";
-      var cards = activeBrand ? allCards.filter(function(c){ return c.brand === activeBrand; }) : allCards;
+      var cards = activeBrand ? allCards.filter(function(c){ return displayBrandsForCard(c).indexOf(activeBrand) !== -1; }) : allCards;
       var q = searchQuery;
       if (q) cards = cards.filter(function(c){ return cardMatchesSearch(c, q); });
       var cardsHtml = cards.length
@@ -1365,14 +1494,7 @@
           '<div class="field">' +
             '<label for="fRefs">Referências afetadas</label>' +
             '<input type="text" id="fRefs" placeholder="Ex: 1201, 1202, 1310" required>' +
-            '<div class="hint">Separe múltiplas referências por vírgula.</div>' +
-          '</div>' +
-          '<div class="field">' +
-            '<label for="fBrand">Marca</label>' +
-            '<select id="fBrand" required>' +
-              '<option value="" disabled selected>Selecionar marca…</option>' +
-              BRANDS.map(function(b){ return '<option value="' + esc(b.name) + '">' + esc(b.name) + '</option>'; }).join("") +
-            '</select>' +
+            '<div class="hint">Separe múltiplas referências por vírgula. A marca é identificada automaticamente pelo prefixo de cada referência; se houver mais de uma marca, o cartão será dividido automaticamente ao sair de Compras.</div>' +
           '</div>' +
           '<div id="tecidoFields">' +
             '<div class="field">' +
@@ -1397,22 +1519,21 @@
             '</div>' +
             '<div class="field">' +
               '<label for="fCompra">COMPRA</label>' +
-              '<input type="text" id="fCompra" placeholder="Informações de compra">' +
+              '<input type="text" id="fCompra">' +
             '</div>' +
             '<div class="field">' +
               '<label for="fSituacaoSubstituto">Situação do Substituto</label>' +
-              '<input type="text" id="fSituacaoSubstituto" placeholder="Ex: Em aprovação, disponível em estoque…">' +
+              '<input type="text" id="fSituacaoSubstituto">' +
             '</div>' +
             '<div class="field">' +
               '<label for="fQtdMinima">Quantidade mínima</label>' +
-              '<input type="text" id="fQtdMinima" placeholder="Ex: 500m">' +
+              '<input type="text" id="fQtdMinima">' +
             '</div>' +
             '<div class="field">' +
-              '<label for="fLiberacaoAprovacao">Liberação/Aprovação</label>' +
-              '<select id="fLiberacaoAprovacao">' +
-                '<option value="" disabled selected>Selecionar setor…</option>' +
-                LIBERACAO_SETORES.map(function(s){ return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join("") +
-              '</select>' +
+              '<label>Liberação/Aprovação</label>' +
+              '<div class="checkbox-grid">' +
+                LIBERACAO_SETORES.map(function(s){ return '<label class="check-label"><input type="checkbox" class="fLiberacaoAprovacao" value="' + esc(s) + '"> ' + esc(s) + '</label>'; }).join("") +
+              '</div>' +
             '</div>' +
             '<div class="field">' +
               '<label for="fSepararEstoque">Separar no Estoque</label>' +
@@ -1430,13 +1551,13 @@
             '</div>' +
           '</div>' +
           '<div class="field">' +
-            '<label>Imagem de referência (opcional)</label>' +
+            '<label>Imagem de referência</label>' +
             '<div class="file-field">' +
               '<label class="file-btn" for="fImage">Selecionar imagem…</label>' +
               '<input type="file" id="fImage" accept="image/*">' +
               '<div class="file-preview" id="fImagePreview"><img id="fImagePreviewThumb" alt=""><button type="button" class="file-remove" id="fImageRemove">Remover</button></div>' +
             '</div>' +
-            '<div class="hint">A imagem acompanha o cartão em todas as etapas até a conclusão.</div>' +
+            '<div class="hint">A imagem acompanha o cartão em todas as etapas até a conclusão. Se "Separar no Estoque" for Sim, a foto passa a ser obrigatória para sair de Compras.</div>' +
           '</div>' +
           '<button type="submit" class="new-request-btn" style="width:100%;justify-content:center;margin:6px 0 0;">Criar Solicitação</button>' +
         '</form>' +
@@ -1458,10 +1579,13 @@
       document.getElementById("fMotivo").required = isTecido;
       document.getElementById("fJaUtilizado").required = isTecido;
       document.getElementById("fVeioCorteSubstituto").required = isTecido;
-      document.getElementById("fLiberacaoAprovacao").required = isTecido;
+      document.getElementById("fCompra").required = isTecido;
+      document.getElementById("fSituacaoSubstituto").required = isTecido;
+      document.getElementById("fQtdMinima").required = isTecido;
       document.getElementById("fSepararEstoque").required = isTecido;
       document.getElementById("fOriginal").required = !isTecido;
       document.getElementById("fSubstitute").required = !isTecido;
+      document.getElementById("fDetails").required = !isTecido;
     }
     document.querySelectorAll('input[name="fTipo"]').forEach(function(r){ r.addEventListener("change", updateTipoFields); });
     updateTipoFields();
@@ -1487,7 +1611,6 @@
       e.preventDefault();
       var tipo = document.querySelector('input[name="fTipo"]:checked').value;
       var refsRaw = document.getElementById("fRefs").value.trim();
-      var brand = document.getElementById("fBrand").value;
 
       var refs = refsRaw.split(",").map(function(r){ return r.trim(); }).filter(Boolean);
       var uniqueRefs = refs.filter(function(r,i){ return refs.indexOf(r) === i; });
@@ -1504,11 +1627,11 @@
         var compra = document.getElementById("fCompra").value.trim();
         var situacaoSubstituto = document.getElementById("fSituacaoSubstituto").value.trim();
         var quantidadeMinima = document.getElementById("fQtdMinima").value.trim();
-        var liberacaoAprovacao = document.getElementById("fLiberacaoAprovacao").value;
+        var liberacaoAprovacao = Array.prototype.slice.call(document.querySelectorAll(".fLiberacaoAprovacao:checked")).map(function(c){ return c.value; });
         var separarEstoque = document.getElementById("fSepararEstoque").value;
 
-        if (!demanda || !de || !para || !uniqueRefs.length || !brand || !motivo || !jaUtilizado || !veioCorteSubstituto || !liberacaoAprovacao || !separarEstoque){
-          toast("Preencha Demanda, De, Para, referências, marca, motivo, Já Utilizado, Veio Corte Substituto, Liberação/Aprovação e Separar no Estoque.", "error");
+        if (!demanda || !de || !para || !uniqueRefs.length || !motivo || !jaUtilizado || !veioCorteSubstituto || !compra || !situacaoSubstituto || !quantidadeMinima || !liberacaoAprovacao.length || !separarEstoque){
+          toast("Preencha Demanda, De, Para, referências, motivo, Já Utilizado, Veio Corte Substituto, COMPRA, Situação do Substituto, Quantidade mínima, Liberação/Aprovação e Separar no Estoque.", "error");
           return;
         }
 
@@ -1533,10 +1656,15 @@
         substituteFabric = document.getElementById("fSubstitute").value.trim();
         details = document.getElementById("fDetails").value.trim();
 
-        if (!originalFabric || !substituteFabric || !uniqueRefs.length || !brand){
-          toast("Preencha aviamento atual, substituto, ao menos uma referência e a marca.", "error");
+        if (!originalFabric || !substituteFabric || !uniqueRefs.length || !details){
+          toast("Preencha aviamento atual, substituto, ao menos uma referência e os detalhes/observações.", "error");
           return;
         }
+      }
+
+      if (tecidoData && tecidoData.separarEstoque && !pendingImageDataUrl){
+        toast("Separar no Estoque está marcado como Sim — anexe uma imagem de referência.", "error");
+        return;
       }
 
       var actionsInitial = {}, actionsFinal = {};
@@ -1554,7 +1682,6 @@
         substituteFabric: substituteFabric,
         tecido: tecidoData,
         image: pendingImageDataUrl,
-        brand: brand,
         references: uniqueRefs,
         details: details,
         column: "compras",
@@ -1583,7 +1710,6 @@
   function renderPanel(){
     var card = state.cards.find(function(c){ return c.id === panelCardId; });
     if (!card) return;
-    var brand = brandOf(card.brand);
     var totalDays = daysBetween(card.createdAt);
     var colDays = daysBetween(card.enteredColumnAt);
 
@@ -1718,8 +1844,8 @@
         '<div class="panel-section">' +
           '<div class="section-label">Informações gerais</div>' +
           (card.image ? '<img class="attachment-preview" id="attachmentPreview" src="' + card.image + '" alt="Imagem de referência anexada">' : '') +
-          '<div class="field" style="margin-bottom:8px;">' +
-            '<span class="brand-chip" style="--brand-bg:' + brand.bg + ';--brand-fg:' + brand.fg + ';background:var(--brand-bg);color:var(--brand-fg);"><span class="dot"></span>' + esc(brand.name) + '</span>' +
+          '<div class="field brand-chip-row" style="margin-bottom:8px;">' +
+            renderBrandChips(card) +
           '</div>' +
           '<div class="field">' +
             '<label>Tecido/Aviamento atual → substituto</label>' +
