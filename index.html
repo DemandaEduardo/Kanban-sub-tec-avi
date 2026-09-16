@@ -629,7 +629,7 @@
     { key:"ficha", label:"Ficha", initial:"F" }
   ];
 
-  function defaultEngFlags(){ return { encaixe:false, sequencia:false, ficha:false }; }
+  function defaultEngFlags(){ return { encaixe:false, sequencia:false, ficha:false, observacao:"" }; }
   function buildEngFlags(refs){
     var m = {};
     refs.forEach(function(r){ m[r] = defaultEngFlags(); });
@@ -639,7 +639,10 @@
     if (!card.engFlags || typeof card.engFlags !== "object") card.engFlags = {};
     card.references.forEach(function(r){
       if (!card.engFlags[r]) card.engFlags[r] = defaultEngFlags();
-      else ENG_FLAGS.forEach(function(f){ if (card.engFlags[r][f.key] === undefined) card.engFlags[r][f.key] = false; });
+      else {
+        ENG_FLAGS.forEach(function(f){ if (card.engFlags[r][f.key] === undefined) card.engFlags[r][f.key] = false; });
+        if (card.engFlags[r].observacao === undefined) card.engFlags[r].observacao = "";
+      }
     });
   }
   function defaultDivisao(){ return { alternativa:"", quantidade:"", numeroOp:"" }; }
@@ -692,6 +695,7 @@
                   ENG_FLAGS.map(function(flag){ return (f[flag.key] ? '✓' : '—') + ' ' + esc(flag.label); }).join(' · ') +
                 '</span>' +
               '</div>' +
+              (f.observacao ? '<div class="detail-text">' + esc(f.observacao) + '</div>' : '') +
             '</div>'
           );
         }).join("") +
@@ -1793,6 +1797,7 @@
                     );
                   }).join("") +
                 '</div>' +
+                '<textarea class="eng-obs-input" data-ref="' + esc(r) + '" placeholder="Observação — informações sobre esta referência…">' + esc(f.observacao || "") + '</textarea>' +
               '</div>'
             );
           }).join("") +
@@ -1918,6 +1923,17 @@
         if (!card.engFlags) card.engFlags = {};
         if (!card.engFlags[ref]) card.engFlags[ref] = defaultEngFlags();
         card.engFlags[ref][key] = chk.checked;
+        save();
+        renderAll();
+        renderPanel();
+      });
+    });
+    panelEl.querySelectorAll(".eng-obs-input").forEach(function(ta){
+      ta.addEventListener("change", function(){
+        var ref = ta.getAttribute("data-ref");
+        if (!card.engFlags) card.engFlags = {};
+        if (!card.engFlags[ref]) card.engFlags[ref] = defaultEngFlags();
+        card.engFlags[ref].observacao = ta.value;
         save();
         renderAll();
         renderPanel();
