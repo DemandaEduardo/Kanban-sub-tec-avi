@@ -1494,7 +1494,7 @@
           '<div class="field">' +
             '<label for="fRefs">Referências afetadas</label>' +
             '<input type="text" id="fRefs" placeholder="Ex: 1201, 1202, 1310" required>' +
-            '<div class="hint">Separe múltiplas referências por vírgula. A marca é identificada automaticamente pelo prefixo de cada referência; se houver mais de uma marca, o cartão será dividido automaticamente ao sair de Compras.</div>' +
+            '<div class="hint">Obrigatório separar múltiplas referências por vírgula (não use espaço, ponto e vírgula ou barra). A marca é identificada automaticamente pelo prefixo de cada referência; se houver mais de uma marca, o cartão será dividido automaticamente ao sair de Compras.</div>' +
           '</div>' +
           '<div id="tecidoFields">' +
             '<div class="field">' +
@@ -1614,6 +1614,11 @@
 
       var refs = refsRaw.split(",").map(function(r){ return r.trim(); }).filter(Boolean);
       var uniqueRefs = refs.filter(function(r,i){ return refs.indexOf(r) === i; });
+
+      if (refs.some(function(r){ return /[\s;\/]/.test(r); })){
+        toast("Digite as referências separadas por vírgula (,). Não use espaço, ponto e vírgula ou barra como separador.", "error");
+        return;
+      }
 
       var originalFabric, substituteFabric, details, tecidoData = null;
 
@@ -1865,9 +1870,11 @@
 
         actionsSectionHtml +
 
-        '<div class="panel-section">' +
-          '<div id="deleteWrap"><button class="danger-link" id="btnDeleteCard">Excluir solicitação</button></div>' +
-        '</div>' +
+        (ci < colIndex("engenharia") ?
+          '<div class="panel-section">' +
+            '<div id="deleteWrap"><button class="danger-link" id="btnDeleteCard">Excluir solicitação</button></div>' +
+          '</div>'
+        : '') +
 
       '</div>';
 
@@ -1979,6 +1986,7 @@
     });
     var deleteWrap = document.getElementById("deleteWrap");
     function bindDeleteLink(){
+      if (!deleteWrap) return;
       deleteWrap.innerHTML = '<button class="danger-link" id="btnDeleteCard">Excluir solicitação</button>';
       document.getElementById("btnDeleteCard").addEventListener("click", function(){
         deleteWrap.innerHTML =
